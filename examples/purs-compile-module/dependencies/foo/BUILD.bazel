@@ -1,0 +1,38 @@
+load(
+    "@bazel_skylib//rules:build_test.bzl",
+    "build_test",
+)
+
+build_test(
+    name = "foo_test",
+    targets = [
+        ":foo",
+    ],
+)
+
+# If we wanted to manage all of the flags and the usage of `purs-compile-module` by hand,
+# we can use a `genrule` like below.
+# This is largely to show how it's _possible_ to pass flags around.
+# Usage of `purs-compile-module` should be automated by some other tooling.
+genrule(
+    name = "foo",
+    srcs = [
+        "Foo.purs",
+    ],
+    outs = [
+        "externs.cbor",
+    ],
+    cmd = " ".join(
+        [
+            "$(execpath //cmd/purs-compile-module)",
+            "--output-signature-externs-file $@",
+            "--purs-file $(execpath Foo.purs)",
+        ],
+    ),
+    tools = [
+        "//cmd/purs-compile-module",
+    ],
+    visibility = [
+        "//examples/purs-compile-module/dependencies:__subpackages__",
+    ],
+)

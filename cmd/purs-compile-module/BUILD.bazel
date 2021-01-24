@@ -26,8 +26,13 @@ haskell_binary(
         "-threaded",
         "-with-rtsopts=-N",
     ],
+    visibility = [
+        "//examples:__subpackages__",
+    ],
     deps = [
         ":base",
+        ":containers",
+        ":mtl",
         "@stackage//:optparse-applicative",
         "@stackage//:purescript",
         "@stackage//:rio",
@@ -44,4 +49,12 @@ haskell_repl(
 
 haskell_toolchain_library(
     name = "base",
+)
+
+haskell_toolchain_library(
+    name = "containers",
+)
+
+haskell_toolchain_library(
+    name = "mtl",
 )

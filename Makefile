@@ -31,7 +31,7 @@ ORMOLU := $(BAZEL_BINDIR)/tools/ormolu/ormolu
 BAZEL := BAZEL_USE_CPP_ONLY_TOOLCHAIN=1 $(BAZEL_BINARY)
 IBAZEL := BAZEL_USE_CPP_ONLY_TOOLCHAIN=1 $(IBAZEL_BINARY) -bazel_path $(BAZEL_BINARY)
 
-.DEFAULT_GOAL := build
+.DEFAULT_GOAL := test
 
 $(BAZEL_BINARY): | $(BUILDDIR)
 	$(info Downloading bazelisk binary)
@@ -88,6 +88,10 @@ lint-haskell: $(BAZEL_BINARY)
 lint-starlark: $(BAZEL_BINARY)
 	$(BAZEL) build //tools/buildifier
 	$(BUILDIFIER) -r -lint=warn -mode=check .
+
+.PHONY: test
+test: $(BAZEL_BINARY)
+	$(BAZEL) test $(BAZEL_CONFIG) //...
 
 .PHONY: watch
 watch: $(BAZEL_BINARY)
