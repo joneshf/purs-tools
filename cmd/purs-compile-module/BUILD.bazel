@@ -28,7 +28,9 @@ haskell_binary(
     ],
     deps = [
         ":base",
+        "@stackage//:optparse-applicative",
         "@stackage//:purescript",
+        "@stackage//:rio",
     ],
 )
 
