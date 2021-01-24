@@ -1,6 +1,7 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE EmptyCase #-}
 {-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PackageImports #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -14,6 +15,17 @@ import qualified "base" Data.Version
 import qualified "purescript" Language.PureScript
 import qualified "optparse-applicative" Options.Applicative
 import "rio" RIO hiding (error)
+
+-- |
+-- The arguments to the program.
+data Arguments = Arguments
+  { -- |
+    -- The actual @Mode@ we want to run.
+    mode :: Mode,
+    -- |
+    -- Whether we want to display debug information or not.
+    verbose :: Bool
+  }
 
 -- |
 -- Any errors we might run into that we want to return at the end of the program.
@@ -54,6 +66,33 @@ instance Display VersionMode where
     Numeric -> "Numeric"
 
 -- |
+-- The actual parser for @Arguments@.
+argumentsParser :: Options.Applicative.Parser Arguments
+argumentsParser =
+  pure Arguments
+    <*> modeParser
+    <*> verbose
+  where
+    verbose :: Options.Applicative.Parser Bool
+    verbose =
+      Options.Applicative.switch
+        ( Options.Applicative.help "Display debug information to STDERR"
+            <> Options.Applicative.long "verbose"
+        )
+
+-- |
+-- This wraps the @argumentsParser@ with some more information and helper text.
+argumentsParserInfo :: Options.Applicative.ParserInfo Arguments
+argumentsParserInfo =
+  Options.Applicative.info (Options.Applicative.helper <*> argumentsParser) description
+  where
+    description :: Options.Applicative.InfoMod Arguments
+    description =
+      Options.Applicative.fullDesc
+        <> Options.Applicative.progDesc "Compile a single PureScript module"
+        <> Options.Applicative.header "purs-compile-module - A PureScript compiler"
+
+-- |
 -- Our entry point to `purs-compile-module`.
 --
 -- When run on a terminal,
@@ -61,18 +100,23 @@ instance Display VersionMode where
 -- There should be different modes that can be run based on the arguments given to it.
 main :: IO ()
 main = do
-  mode <- Options.Applicative.execParser modeParserInfo
-  runSimpleApp do
-    logDebugS "purs-compile-module" ("Processing Mode: " <> display mode)
-    result <- case mode of
-      Version versionMode -> versionModeRun versionMode
-    case result of
-      Left error -> do
-        logErrorS "purs-compile-module" (display error)
-        exitFailure
-      Right output -> do
-        hPutBuilder stdout (getUtf8Builder output)
-        exitSuccess
+  arguments <- Options.Applicative.execParser argumentsParserInfo
+  case arguments of
+    Arguments {mode, verbose} -> do
+      logOptions <- logOptionsHandle stderr verbose
+      withLogFunc logOptions \logFunc -> do
+        simpleApp <- mkSimpleApp logFunc Nothing
+        runRIO simpleApp do
+          logDebugS "purs-compile-module" ("Processing Mode: " <> display mode)
+          result <- case mode of
+            Version versionMode -> versionModeRun versionMode
+          case result of
+            Left error -> do
+              logErrorS "purs-compile-module" (display error)
+              exitFailure
+            Right output -> do
+              hPutBuilder stdout (getUtf8Builder output)
+              exitSuccess
 
 -- |
 -- The actual parser for @Mode@.
@@ -85,18 +129,6 @@ modeParser =
         [ Options.Applicative.command "version" (fmap Version versionModeParserInfo)
         ]
     )
-
--- |
--- This wraps the @modeParser@ with some more information and helper text.
-modeParserInfo :: Options.Applicative.ParserInfo Mode
-modeParserInfo =
-  Options.Applicative.info (Options.Applicative.helper <*> modeParser) description
-  where
-    description :: Options.Applicative.InfoMod Mode
-    description =
-      Options.Applicative.fullDesc
-        <> Options.Applicative.progDesc "Compile a single PureScript module"
-        <> Options.Applicative.header "purs-compile-module - A PureScript compiler"
 
 -- |
 -- A helper for creating a newline.
