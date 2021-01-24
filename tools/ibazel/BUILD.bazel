@@ -1,0 +1,17 @@
+sh_binary(
+    name = "ibazel",
+    srcs = select(
+        {
+            "//:linux": [
+                "@ibazel_linux//file",
+            ],
+            "//:macos": [
+                "@ibazel_macos//file",
+            ],
+            "//:windows": [
+                "@ibazel_windows//file",
+            ],
+        },
+        no_match_error = "No ibazel binary available for this platform",
+    ),
+)

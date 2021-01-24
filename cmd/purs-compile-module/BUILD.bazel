@@ -1,0 +1,45 @@
+load(
+    "@rules_haskell//haskell:defs.bzl",
+    "haskell_binary",
+    "haskell_repl",
+    "haskell_toolchain_library",
+)
+
+haskell_binary(
+    name = "purs-compile-module",
+    srcs = [
+        "Main.hs",
+    ],
+    compiler_flags = [
+        "-O2",
+        "-Wall",
+        "-Wcompat",
+        "-Werror",
+        "-Wincomplete-record-updates",
+        "-Wincomplete-uni-patterns",
+        "-Wmissing-methods",
+        "-Wredundant-constraints",
+        "-optc=-static",
+        "-optl=-pthread",
+        "-rtsopts",
+        "-static",
+        "-threaded",
+        "-with-rtsopts=-N",
+    ],
+    deps = [
+        ":base",
+        "@stackage//:purescript",
+    ],
+)
+
+haskell_repl(
+    name = "hie-bios",
+    collect_data = False,
+    deps = [
+        ":purs-compile-module",
+    ],
+)
+
+haskell_toolchain_library(
+    name = "base",
+)

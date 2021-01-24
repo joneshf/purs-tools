@@ -1,0 +1,8 @@
+# Order these configuration options according to the documentation:
+# https://docs.bazel.build/versions/master/guide.html#option-defaults
+
+build --disk_cache=.build/bazel-cache/action
+build --repository_cache=.build/bazel-cache/repository
+
+# We don't need the output of tests to print to STDOUT unless there's a failure.
+test --test_output errors

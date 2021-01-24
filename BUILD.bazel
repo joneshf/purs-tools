@@ -1,0 +1,38 @@
+config_setting(
+    name = "linux",
+    constraint_values = [
+        "@platforms//os:linux",
+    ],
+)
+
+config_setting(
+    name = "macos",
+    constraint_values = [
+        "@platforms//os:macos",
+    ],
+)
+
+config_setting(
+    name = "windows",
+    constraint_values = [
+        "@platforms//os:windows",
+    ],
+)
+
+sh_binary(
+    name = "ghc",
+    srcs = select(
+        {
+            ":linux": [
+                "@rules_haskell_ghc_linux_amd64//:bin/ghc",
+            ],
+            ":macos": [
+                "@rules_haskell_ghc_darwin_amd64//:bin/ghc",
+            ],
+            ":windows": [
+                "@rules_haskell_ghc_windows_amd64//:bin/ghc",
+            ],
+        },
+        no_match_error = "No ghc binary available for this platform",
+    ),
+)

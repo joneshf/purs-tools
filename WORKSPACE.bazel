@@ -1,0 +1,120 @@
+workspace(
+    name = "joneshf_purs_tools",
+)
+
+# Basic loads
+
+load(
+    "@bazel_tools//tools/build_defs/repo:http.bzl",
+    "http_archive",
+)
+
+# Archives and repositories
+
+http_archive(
+    name = "alex",
+    build_file = "//vendor/alex:alex.BUILD",
+    sha256 = "d58e4d708b14ff332a8a8edad4fa8989cb6a9f518a7c6834e96281ac5f8ff232",
+    strip_prefix = "alex-3.2.4",
+    urls = [
+        "https://hackage.haskell.org/package/alex-3.2.4/alex-3.2.4.tar.gz",
+    ],
+)
+
+http_archive(
+    name = "happy",
+    build_file = "//vendor/happy:happy.BUILD",
+    sha256 = "3e81a3e813acca3aae52721c412cde18b7b7c71ecbacfaeaa5c2f4b35abf1d8d",
+    strip_prefix = "happy-1.19.9",
+    urls = [
+        "https://hackage.haskell.org/package/happy-1.19.9/happy-1.19.9.tar.gz",
+    ],
+)
+
+http_archive(
+    name = "rules_haskell",
+    sha256 = "4d9e3a87ffada5e6417b7fe9ac84a80a7e817e3a044be57ca25da376edb2d0c7",
+    strip_prefix = "rules_haskell-0.13",
+    urls = [
+        "https://github.com/tweag/rules_haskell/archive/v0.13.zip",
+    ],
+)
+
+# Dependencies
+
+load(
+    "@rules_haskell//haskell:repositories.bzl",
+    "rules_haskell_dependencies",
+)
+
+rules_haskell_dependencies()
+
+# Tools
+
+load(
+    "//tools/buildifier:deps.bzl",
+    "buildifier_dependencies",
+)
+
+buildifier_dependencies()
+
+load(
+    "//tools/hlint:deps.bzl",
+    "hlint_dependencies",
+)
+
+hlint_dependencies()
+
+load(
+    "//tools/ibazel:deps.bzl",
+    "ibazel_dependencies",
+)
+
+ibazel_dependencies()
+
+load(
+    "//tools/ormolu:deps.bzl",
+    "ormolu_dependencies",
+)
+
+ormolu_dependencies()
+
+# Rules
+
+load(
+    "@rules_haskell//haskell:cabal.bzl",
+    "stack_snapshot",
+)
+load(
+    "@rules_haskell//haskell:toolchain.bzl",
+    "rules_haskell_toolchains",
+)
+
+rules_haskell_toolchains(
+    locale = "en_US.utf8",
+    version = "8.6.5",
+)
+
+stack_snapshot(
+    name = "stackage",
+    flags = {
+        "aeson-pretty": [
+            "lib-only",
+        ],
+        "these": [
+            "-assoc",
+            "-quickcheck",
+        ],
+    },
+    local_snapshot = "//:snapshot.yaml",
+    packages = [
+        # our dependencies
+        "optparse-applicative",
+        "rio",
+        "purescript",
+    ],
+    tools = [
+        "@alex",
+        "@happy",
+    ],
+)
