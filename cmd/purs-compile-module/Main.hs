@@ -58,8 +58,8 @@ data CompileMode = CompileMode
     -- Whether to opt-out of any warnings.
     ignoreWarnings :: Bool,
     -- |
-    -- The output JavaScript file we expect to generate.
-    outputJavaScriptFile :: Maybe FilePath,
+    -- Any JavaScript files we deal with.
+    javaScriptFiles :: Maybe CompileModeJavaScript,
     -- |
     -- We need the actual PureScript file to compile.
     pureScriptFile :: FilePath
@@ -68,7 +68,7 @@ data CompileMode = CompileMode
 instance Display CompileMode where
   display :: CompileMode -> Utf8Builder
   display compileMode = case compileMode of
-    CompileMode {externsFiles = externsFiles', ignoreWarnings, outputJavaScriptFile, pureScriptFile} ->
+    CompileMode {externsFiles = externsFiles', ignoreWarnings, javaScriptFiles = javaScriptFiles', pureScriptFile} ->
       "CompileMode { "
         <> foldMap
           ( \externsFiles ->
@@ -80,9 +80,13 @@ instance Display CompileMode where
         <> "ignoreWarnings = "
         <> displayShow ignoreWarnings
         <> ", "
-        <> "outputJavaScriptFile = "
-        <> displayShow outputJavaScriptFile
-        <> ", "
+        <> foldMap
+          ( \javaScriptFiles ->
+              "javaScriptFiles = "
+                <> display javaScriptFiles
+                <> ", "
+          )
+          javaScriptFiles'
         <> "pureScriptFile = "
         <> displayShow pureScriptFile
         <> " }"
@@ -119,6 +123,23 @@ instance Display CompileModeExterns where
         <> ", "
         <> "outputSignatureExternsFile = "
         <> displayShow outputSignatureExternsFile
+        <> " }"
+
+-- |
+-- The data for compiling JavaScript files.
+newtype CompileModeJavaScript = CompileModeJavaScript
+  { -- |
+    -- The output JavaScript file we expect to generate.
+    outputJavaScriptFile :: FilePath
+  }
+
+instance Display CompileModeJavaScript where
+  display :: CompileModeJavaScript -> Utf8Builder
+  display compileModeJavaScript = case compileModeJavaScript of
+    CompileModeJavaScript {outputJavaScriptFile} ->
+      "CompileModeJavaScript { "
+        <> "outputJavaScriptFile = "
+        <> displayShow outputJavaScriptFile
         <> " }"
 
 -- |
@@ -240,13 +261,28 @@ compileModeExternsParser =
         )
 
 -- |
+-- The actual parser for @CompileModeJavaScript@.
+compileModeJavaScriptParser :: Options.Applicative.Parser CompileModeJavaScript
+compileModeJavaScriptParser =
+  pure CompileModeJavaScript
+    <*> outputJavaScriptFile
+  where
+    outputJavaScriptFile :: Options.Applicative.Parser FilePath
+    outputJavaScriptFile =
+      Options.Applicative.strOption
+        ( Options.Applicative.help "Where to place the compiled JavaScript file"
+            <> Options.Applicative.long "output-javascript-file"
+            <> Options.Applicative.metavar "FILE"
+        )
+
+-- |
 -- The actual parser for @CompileMode@.
 compileModeParser :: Options.Applicative.Parser CompileMode
 compileModeParser =
   pure CompileMode
     <*> optional compileModeExternsParser
     <*> ignoreWarnings
-    <*> optional outputJavaScriptFile
+    <*> optional compileModeJavaScriptParser
     <*> pureScriptFile
   where
     ignoreWarnings :: Options.Applicative.Parser Bool
@@ -254,14 +290,6 @@ compileModeParser =
       Options.Applicative.switch
         ( Options.Applicative.help "Don't let warnings fail compilation"
             <> Options.Applicative.long "ignore-warnings"
-        )
-
-    outputJavaScriptFile :: Options.Applicative.Parser FilePath
-    outputJavaScriptFile =
-      Options.Applicative.strOption
-        ( Options.Applicative.help "Where to place the compiled JavaScript file"
-            <> Options.Applicative.long "output-javascript-file"
-            <> Options.Applicative.metavar "FILE"
         )
 
     pureScriptFile :: Options.Applicative.Parser FilePath
@@ -287,7 +315,7 @@ compileModeRun ::
   CompileMode ->
   RIO SimpleApp (Either Error Utf8Builder)
 compileModeRun mode = case mode of
-  CompileMode {externsFiles, ignoreWarnings, outputJavaScriptFile, pureScriptFile} -> do
+  CompileMode {externsFiles, ignoreWarnings, javaScriptFiles, pureScriptFile} -> do
     logDebugS "purs-compile-module" ("Processing compile mode: " <> display mode)
     result <- liftIO do
       Language.PureScript.Make.runMake Language.PureScript.Options.defaultOptions do
@@ -300,7 +328,7 @@ compileModeRun mode = case mode of
         pureScriptModule <- case Language.PureScript.CST.parseFromFile pureScriptFile pureScriptFileContents of
           Left parseErrors -> Control.Monad.Error.Class.throwError (Language.PureScript.CST.toMultipleErrors pureScriptFile parseErrors)
           Right pureScriptModule -> pure pureScriptModule
-        Language.PureScript.Make.rebuildModule (makeActions externsFiles outputJavaScriptFile) externs pureScriptModule
+        Language.PureScript.Make.rebuildModule (makeActions externsFiles javaScriptFiles) externs pureScriptModule
     case result of
       (Left errors, warnings)
         | ignoreWarnings,
@@ -389,9 +417,9 @@ main = do
 -- Our set of @Language.PureScript.Make.Actions.MakeActions@ that work for a compiling a single module.
 makeActions ::
   Maybe CompileModeExterns ->
-  Maybe FilePath ->
+  Maybe CompileModeJavaScript ->
   Language.PureScript.Make.Actions.MakeActions Language.PureScript.Make.Monad.Make
-makeActions compileModeExterns' outputJavaScriptFile' =
+makeActions compileModeExterns' compileModeJavaScript' =
   Language.PureScript.Make.Actions.MakeActions
     { Language.PureScript.Make.Actions.codegen,
       Language.PureScript.Make.Actions.ffiCodegen,
@@ -411,10 +439,7 @@ makeActions compileModeExterns' outputJavaScriptFile' =
       Control.Monad.Supply.SupplyT Language.PureScript.Make.Monad.Make ()
     codegen coreFnModule _ externsFile = do
       for_ compileModeExterns' (codegenExterns externsFile)
-      for_ outputJavaScriptFile' \outputJavaScriptFile -> do
-        let ffiModule = Nothing
-        coreImpASTs <- Language.PureScript.CodeGen.JS.moduleToJs coreFnModule ffiModule
-        lift (Language.PureScript.Make.Monad.writeTextFile outputJavaScriptFile (encodeUtf8 (Language.PureScript.CodeGen.JS.Printer.prettyPrintJS coreImpASTs)))
+      for_ compileModeJavaScript' (codegenJavaScript coreFnModule)
 
     codegenExterns ::
       Language.PureScript.Externs.ExternsFile ->
@@ -427,6 +452,15 @@ makeActions compileModeExterns' outputJavaScriptFile' =
         let externsFile :: Language.PureScript.Externs.ExternsFile
             externsFile = makeSignatureExternsFile externsFile'
         lift (Language.PureScript.Make.Monad.writeCborFile outputExternsFile externsFile)
+
+    codegenJavaScript ::
+      Language.PureScript.CoreFn.Module.Module Language.PureScript.CoreFn.Ann.Ann ->
+      CompileModeJavaScript ->
+      Control.Monad.Supply.SupplyT Language.PureScript.Make.Monad.Make ()
+    codegenJavaScript coreFnModule compileModeJavaScript = do
+      let ffiModule = Nothing
+      coreImpASTs <- Language.PureScript.CodeGen.JS.moduleToJs coreFnModule ffiModule
+      lift (Language.PureScript.Make.Monad.writeTextFile (outputJavaScriptFile compileModeJavaScript) (encodeUtf8 (Language.PureScript.CodeGen.JS.Printer.prettyPrintJS coreImpASTs)))
 
     ffiCodegen ::
       Language.PureScript.CoreFn.Module.Module Language.PureScript.CoreFn.Ann.Ann ->
