@@ -1,0 +1,41 @@
+load(
+    "@bazel_skylib//rules:build_test.bzl",
+    "build_test",
+)
+
+build_test(
+    name = "ffi_test",
+    targets = [
+        ":ffi",
+    ],
+)
+
+# If we wanted to manage all of the flags and the usage of `purs-compile-module` by hand,
+# we can use a `genrule` like below.
+# This is largely to show how it's _possible_ to pass flags around.
+# Usage of `purs-compile-module` should be automated by some other tooling.
+genrule(
+    name = "ffi",
+    srcs = [
+        "Foo.purs",
+        "Foo.js",
+    ],
+    outs = [
+        "externs.cbor",
+        "ffi.js",
+        "index.js",
+    ],
+    cmd = " ".join(
+        [
+            "$(execpath //cmd/purs-compile-module)",
+            "--input-ffi-file $(execpath Foo.js)",
+            "--output-ffi-file $(RULEDIR)/ffi.js",
+            "--output-javascript-file $(RULEDIR)/index.js",
+            "--output-standard-externs-file $(RULEDIR)/externs.cbor",
+            "--purs-file $(execpath Foo.purs)",
+        ],
+    ),
+    tools = [
+        "//cmd/purs-compile-module",
+    ],
+)

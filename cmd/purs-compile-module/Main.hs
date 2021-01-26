@@ -22,6 +22,7 @@ import qualified "purescript" Language.PureScript.CodeGen.JS
 import qualified "purescript" Language.PureScript.CodeGen.JS.Printer
 import qualified "purescript" Language.PureScript.CoreFn.Ann
 import qualified "purescript" Language.PureScript.CoreFn.Module
+import qualified "purescript" Language.PureScript.CoreImp.AST
 import qualified "purescript" Language.PureScript.Docs.Types
 import qualified "purescript" Language.PureScript.Environment
 import qualified "purescript" Language.PureScript.Errors
@@ -35,6 +36,7 @@ import qualified "purescript" Language.PureScript.Names
 import qualified "purescript" Language.PureScript.Options
 import qualified "optparse-applicative" Options.Applicative
 import "rio" RIO hiding (error)
+import qualified "rio" RIO.FilePath
 import qualified "rio" RIO.Time
 
 -- |
@@ -126,9 +128,35 @@ instance Display CompileModeExterns where
         <> " }"
 
 -- |
--- The data for compiling JavaScript files.
-newtype CompileModeJavaScript = CompileModeJavaScript
+-- The data for compiling FFI files.
+data CompileModeFFI = CompileModeFFI
   { -- |
+    -- The input FFI file we depend on.
+    inputFFIFile :: FilePath,
+    -- |
+    -- The output FFI file we expect to generate.
+    outputFFIFile :: FilePath
+  }
+
+instance Display CompileModeFFI where
+  display :: CompileModeFFI -> Utf8Builder
+  display compileModeFFI = case compileModeFFI of
+    CompileModeFFI {inputFFIFile, outputFFIFile} ->
+      "CompileModeFFI { "
+        <> "inputFFIFile = "
+        <> displayShow inputFFIFile
+        <> ", "
+        <> "outputFFIFile = "
+        <> displayShow outputFFIFile
+        <> " }"
+
+-- |
+-- The data for compiling JavaScript files.
+data CompileModeJavaScript = CompileModeJavaScript
+  { -- |
+    -- Any FFI files we deal with.
+    ffiFiles :: Maybe CompileModeFFI,
+    -- |
     -- The output JavaScript file we expect to generate.
     outputJavaScriptFile :: FilePath
   }
@@ -136,8 +164,15 @@ newtype CompileModeJavaScript = CompileModeJavaScript
 instance Display CompileModeJavaScript where
   display :: CompileModeJavaScript -> Utf8Builder
   display compileModeJavaScript = case compileModeJavaScript of
-    CompileModeJavaScript {outputJavaScriptFile} ->
+    CompileModeJavaScript {ffiFiles = ffiFiles', outputJavaScriptFile} ->
       "CompileModeJavaScript { "
+        <> foldMap
+          ( \ffiFiles ->
+              "javaScriptFiles = "
+                <> display ffiFiles
+                <> ", "
+          )
+          ffiFiles'
         <> "outputJavaScriptFile = "
         <> displayShow outputJavaScriptFile
         <> " }"
@@ -261,10 +296,35 @@ compileModeExternsParser =
         )
 
 -- |
+-- The actual parser for @CompileModeFFI@.
+compileModeFFIParser :: Options.Applicative.Parser CompileModeFFI
+compileModeFFIParser =
+  pure CompileModeFFI
+    <*> inputFFIFile
+    <*> outputFFIFile
+  where
+    inputFFIFile :: Options.Applicative.Parser FilePath
+    inputFFIFile =
+      Options.Applicative.strOption
+        ( Options.Applicative.help "A pre-compiled FFI file"
+            <> Options.Applicative.long "input-ffi-file"
+            <> Options.Applicative.metavar "FILE"
+        )
+
+    outputFFIFile :: Options.Applicative.Parser FilePath
+    outputFFIFile =
+      Options.Applicative.strOption
+        ( Options.Applicative.help "Where to place the compiled FFI file"
+            <> Options.Applicative.long "output-ffi-file"
+            <> Options.Applicative.metavar "FILE"
+        )
+
+-- |
 -- The actual parser for @CompileModeJavaScript@.
 compileModeJavaScriptParser :: Options.Applicative.Parser CompileModeJavaScript
 compileModeJavaScriptParser =
   pure CompileModeJavaScript
+    <*> optional compileModeFFIParser
     <*> outputJavaScriptFile
   where
     outputJavaScriptFile :: Options.Applicative.Parser FilePath
@@ -380,6 +440,76 @@ externsModuleSignature externsFile =
     }
 
 -- |
+-- Constructs a common.js import where the first @FilePath@ is relative to the second.
+--
+-- There are likely bugs in this implementation.
+--
+-- >>> importRelativeTo "ffi.js" "index.js"
+-- "./ffi.js"
+-- >>> importRelativeTo "ffi.js" "./index.js"
+-- "./ffi.js"
+-- >>> importRelativeTo "./ffi.js" "index.js"
+-- "./ffi.js"
+-- >>> importRelativeTo "./ffi.js" "./index.js"
+-- "./ffi.js"
+-- >>> importRelativeTo "foo/bar/baz/ffi.js" "foo/index.js"
+-- "./bar/baz/ffi.js"
+-- >>> importRelativeTo "foo/bar/baz/ffi.js" "foo/qux/cor/gar/index.js"
+-- "./../../../bar/baz/ffi.js"
+-- >>> importRelativeTo "bar/baz/ffi.js" "foo/qux/cor/gar/index.js"
+-- "./../../../../bar/baz/ffi.js"
+-- >>> importRelativeTo "/foo/bar/baz/ffi.js" "foo/qux/cor/gar/index.js"
+-- "/foo/bar/baz/ffi.js"
+importRelativeTo ::
+  FilePath ->
+  FilePath ->
+  FilePath
+importRelativeTo ffi' javaScript'
+  | RIO.FilePath.isAbsolute ffi' = ffi'
+  | otherwise = case relativeDirectory of
+    "" -> "./" <> ffiFileName
+    _ -> "." <> relativeDirectory <> "/" <> ffiFileName
+  where
+    addDotDot :: [FilePath] -> [FilePath] -> [FilePath] -> [FilePath]
+    addDotDot acc ffis' javaScripts' = case (ffis', javaScripts') of
+      (ffis, []) -> acc <> ffis
+      ([], _) -> acc
+      (ffi : ffis, javaScript : javaScripts)
+        | ffi == javaScript -> addDotDot acc ffis javaScripts
+        | otherwise -> addDotDot (".." : acc) ffis' javaScripts
+
+    -- Since we're working with a common.js import,
+    -- we don't want to rely on the platform's separator.
+    -- If we did,
+    -- we might generate something like `require("./foo\\bar\\baz.js")`.
+    -- That would work on Windows and fail on a Unix platform.
+    --
+    -- We want to use `"/"` explicitly as the separator so the path will work on both Windows and Unix platforms.
+    combine :: FilePath -> FilePath -> FilePath
+    combine directory fileName = directory <> "/" <> fileName
+
+    ffiDirectories :: [FilePath]
+    ffiDirectories = RIO.FilePath.splitDirectories ffiDirectory
+
+    ffiDirectory :: FilePath
+    ffiDirectory = RIO.FilePath.takeDirectory ffi'
+
+    ffiFileName :: FilePath
+    ffiFileName = RIO.FilePath.takeFileName ffi'
+
+    javaScriptDirectories :: [FilePath]
+    javaScriptDirectories = RIO.FilePath.splitDirectories javaScriptDirectory
+
+    javaScriptDirectory :: FilePath
+    javaScriptDirectory = RIO.FilePath.takeDirectory javaScript'
+
+    relativeDirectories :: [FilePath]
+    relativeDirectories = addDotDot [] ffiDirectories javaScriptDirectories
+
+    relativeDirectory :: FilePath
+    relativeDirectory = foldl' combine "" relativeDirectories
+
+-- |
 -- Our entry point to `purs-compile-module`.
 --
 -- When run on a terminal,
@@ -458,9 +588,32 @@ makeActions compileModeExterns' compileModeJavaScript' =
       CompileModeJavaScript ->
       Control.Monad.Supply.SupplyT Language.PureScript.Make.Monad.Make ()
     codegenJavaScript coreFnModule compileModeJavaScript = do
-      let ffiModule = Nothing
+      ffiModule <- codegenFFI coreFnModule compileModeJavaScript
       coreImpASTs <- Language.PureScript.CodeGen.JS.moduleToJs coreFnModule ffiModule
       lift (Language.PureScript.Make.Monad.writeTextFile (outputJavaScriptFile compileModeJavaScript) (encodeUtf8 (Language.PureScript.CodeGen.JS.Printer.prettyPrintJS coreImpASTs)))
+
+    codegenFFI ::
+      Language.PureScript.CoreFn.Module.Module Language.PureScript.CoreFn.Ann.Ann ->
+      CompileModeJavaScript ->
+      Control.Monad.Supply.SupplyT Language.PureScript.Make.Monad.Make (Maybe Language.PureScript.CoreImp.AST.AST)
+    codegenFFI coreFnModule compileModeJavaScript = do
+      lift (validateFFIModule coreFnModule (ffiFiles compileModeJavaScript))
+      for (ffiFiles compileModeJavaScript) \compileModeFFI -> do
+        lift (Language.PureScript.Make.Monad.copyFile (inputFFIFile compileModeFFI) (outputFFIFile compileModeFFI))
+        pure
+          ( Language.PureScript.CoreImp.AST.App
+              Nothing
+              (Language.PureScript.CoreImp.AST.Var Nothing "require")
+              [ Language.PureScript.CoreImp.AST.StringLiteral
+                  Nothing
+                  ( fromString
+                      ( importRelativeTo
+                          (outputFFIFile compileModeFFI)
+                          (outputJavaScriptFile compileModeJavaScript)
+                      )
+                  )
+              ]
+          )
 
     ffiCodegen ::
       Language.PureScript.CoreFn.Module.Module Language.PureScript.CoreFn.Ann.Ann ->
@@ -494,6 +647,33 @@ makeActions compileModeExterns' compileModeJavaScript' =
       Language.PureScript.Names.ModuleName ->
       Language.PureScript.Make.Monad.Make (FilePath, Maybe Language.PureScript.Externs.ExternsFile)
     readExterns _ = pure ("", Nothing)
+
+    validateFFIModule ::
+      Language.PureScript.CoreFn.Module.Module Language.PureScript.CoreFn.Ann.Ann ->
+      Maybe CompileModeFFI ->
+      Language.PureScript.Make.Monad.Make ()
+    validateFFIModule coreFnModule compileModeFFI' = do
+      case (Language.PureScript.CoreFn.Module.moduleForeign coreFnModule, compileModeFFI') of
+        ([], Just compileModeFFI) -> do
+          Control.Monad.Error.Class.throwError
+            ( Language.PureScript.Errors.errorMessage'
+                (Language.PureScript.CoreFn.Module.moduleSourceSpan coreFnModule)
+                ( Language.PureScript.Errors.UnnecessaryFFIModule
+                    (Language.PureScript.CoreFn.Module.moduleName coreFnModule)
+                    (inputFFIFile compileModeFFI)
+                )
+            )
+        ([], Nothing) -> pure ()
+        (_, Nothing) -> do
+          Control.Monad.Error.Class.throwError
+            ( Language.PureScript.Errors.errorMessage'
+                (Language.PureScript.CoreFn.Module.moduleSourceSpan coreFnModule)
+                ( Language.PureScript.Errors.MissingFFIModule
+                    (Language.PureScript.CoreFn.Module.moduleName coreFnModule)
+                )
+            )
+        (_, Just compileModeFFI) -> do
+          Language.PureScript.Make.Actions.checkForeignDecls coreFnModule (inputFFIFile compileModeFFI)
 
     writeCacheDb ::
       Language.PureScript.Make.Cache.CacheDb ->
