@@ -22,6 +22,7 @@ import qualified "purescript" Language.PureScript.CodeGen.JS
 import qualified "purescript" Language.PureScript.CodeGen.JS.Printer
 import qualified "purescript" Language.PureScript.CoreFn.Ann
 import qualified "purescript" Language.PureScript.CoreFn.Module
+import qualified "purescript" Language.PureScript.CoreFn.ToJSON
 import qualified "purescript" Language.PureScript.CoreImp.AST
 import qualified "purescript" Language.PureScript.Docs.Types
 import qualified "purescript" Language.PureScript.Environment
@@ -54,6 +55,9 @@ data Arguments = Arguments
 -- The different modes for `compile`.
 data CompileMode = CompileMode
   { -- |
+    -- Any CoreFn files we deal with.
+    coreFnFiles :: Maybe CompileModeCoreFn,
+    -- |
     -- Any externs files we deal with.
     externsFiles :: Maybe CompileModeExterns,
     -- |
@@ -70,8 +74,15 @@ data CompileMode = CompileMode
 instance Display CompileMode where
   display :: CompileMode -> Utf8Builder
   display compileMode = case compileMode of
-    CompileMode {externsFiles = externsFiles', ignoreWarnings, javaScriptFiles = javaScriptFiles', pureScriptFile} ->
+    CompileMode {coreFnFiles = coreFnFiles', externsFiles = externsFiles', ignoreWarnings, javaScriptFiles = javaScriptFiles', pureScriptFile} ->
       "CompileMode { "
+        <> foldMap
+          ( \coreFnFiles ->
+              "coreFnFiles = "
+                <> display coreFnFiles
+                <> ", "
+          )
+          coreFnFiles'
         <> foldMap
           ( \externsFiles ->
               "externsFiles = "
@@ -91,6 +102,23 @@ instance Display CompileMode where
           javaScriptFiles'
         <> "pureScriptFile = "
         <> displayShow pureScriptFile
+        <> " }"
+
+-- |
+-- The data for compiling CoreFn files.
+newtype CompileModeCoreFn = CompileModeCoreFn
+  { -- |
+    -- The output CoreFn file we expect to generate.
+    outputCoreFnFile :: FilePath
+  }
+
+instance Display CompileModeCoreFn where
+  display :: CompileModeCoreFn -> Utf8Builder
+  display compileModeCoreFn = case compileModeCoreFn of
+    CompileModeCoreFn {outputCoreFnFile} ->
+      "CompileModeCoreFn { "
+        <> "outputCoreFnFile = "
+        <> displayShow outputCoreFnFile
         <> " }"
 
 -- |
@@ -263,6 +291,21 @@ argumentsParserInfo =
         <> Options.Applicative.header "purs-compile-module - A PureScript compiler"
 
 -- |
+-- The actual parser for @CompileModeCoreFn@.
+compileModeCoreFnParser :: Options.Applicative.Parser CompileModeCoreFn
+compileModeCoreFnParser =
+  pure CompileModeCoreFn
+    <*> outputCoreFnFile
+  where
+    outputCoreFnFile :: Options.Applicative.Parser FilePath
+    outputCoreFnFile =
+      Options.Applicative.strOption
+        ( Options.Applicative.help "Where to place the compiled CoreFn file"
+            <> Options.Applicative.long "output-corefn-file"
+            <> Options.Applicative.metavar "FILE"
+        )
+
+-- |
 -- The actual parser for @CompileModeExterns@.
 compileModeExternsParser :: Options.Applicative.Parser CompileModeExterns
 compileModeExternsParser =
@@ -340,6 +383,7 @@ compileModeJavaScriptParser =
 compileModeParser :: Options.Applicative.Parser CompileMode
 compileModeParser =
   pure CompileMode
+    <*> optional compileModeCoreFnParser
     <*> optional compileModeExternsParser
     <*> ignoreWarnings
     <*> optional compileModeJavaScriptParser
@@ -375,7 +419,7 @@ compileModeRun ::
   CompileMode ->
   RIO SimpleApp (Either Error Utf8Builder)
 compileModeRun mode = case mode of
-  CompileMode {externsFiles, ignoreWarnings, javaScriptFiles, pureScriptFile} -> do
+  CompileMode {coreFnFiles, externsFiles, ignoreWarnings, javaScriptFiles, pureScriptFile} -> do
     logDebugS "purs-compile-module" ("Processing compile mode: " <> display mode)
     result <- liftIO do
       Language.PureScript.Make.runMake Language.PureScript.Options.defaultOptions do
@@ -388,7 +432,7 @@ compileModeRun mode = case mode of
         pureScriptModule <- case Language.PureScript.CST.parseFromFile pureScriptFile pureScriptFileContents of
           Left parseErrors -> Control.Monad.Error.Class.throwError (Language.PureScript.CST.toMultipleErrors pureScriptFile parseErrors)
           Right pureScriptModule -> pure pureScriptModule
-        Language.PureScript.Make.rebuildModule (makeActions externsFiles javaScriptFiles) externs pureScriptModule
+        Language.PureScript.Make.rebuildModule (makeActions coreFnFiles externsFiles javaScriptFiles) externs pureScriptModule
     case result of
       (Left errors, warnings)
         | ignoreWarnings,
@@ -546,10 +590,11 @@ main = do
 -- |
 -- Our set of @Language.PureScript.Make.Actions.MakeActions@ that work for a compiling a single module.
 makeActions ::
+  Maybe CompileModeCoreFn ->
   Maybe CompileModeExterns ->
   Maybe CompileModeJavaScript ->
   Language.PureScript.Make.Actions.MakeActions Language.PureScript.Make.Monad.Make
-makeActions compileModeExterns' compileModeJavaScript' =
+makeActions compileModeCoreFn' compileModeExterns' compileModeJavaScript' =
   Language.PureScript.Make.Actions.MakeActions
     { Language.PureScript.Make.Actions.codegen,
       Language.PureScript.Make.Actions.ffiCodegen,
@@ -568,8 +613,17 @@ makeActions compileModeExterns' compileModeJavaScript' =
       Language.PureScript.Externs.ExternsFile ->
       Control.Monad.Supply.SupplyT Language.PureScript.Make.Monad.Make ()
     codegen coreFnModule _ externsFile = do
+      for_ compileModeCoreFn' (codegenCoreFn coreFnModule)
       for_ compileModeExterns' (codegenExterns externsFile)
       for_ compileModeJavaScript' (codegenJavaScript coreFnModule)
+
+    codegenCoreFn ::
+      Language.PureScript.CoreFn.Module.Module Language.PureScript.CoreFn.Ann.Ann ->
+      CompileModeCoreFn ->
+      Control.Monad.Supply.SupplyT Language.PureScript.Make.Monad.Make ()
+    codegenCoreFn coreFnModule compileModeCoreFn = do
+      let coreFnJSON = Language.PureScript.CoreFn.ToJSON.moduleToJSON Language.PureScript.version coreFnModule
+      lift (Language.PureScript.Make.Monad.writeJSONFile (outputCoreFnFile compileModeCoreFn) coreFnJSON)
 
     codegenExterns ::
       Language.PureScript.Externs.ExternsFile ->
