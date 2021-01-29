@@ -49,7 +49,19 @@ http_archive(
     ],
 )
 
+local_repository(
+    name = "joneshf_rules_purescript",
+    path = "pkg/rules_purescript",
+)
+
 # Dependencies
+
+load(
+    "@joneshf_rules_purescript//purescript:repositories.bzl",
+    "rules_purescript_dependencies",
+)
+
+rules_purescript_dependencies()
 
 load(
     "@bazel_skylib//:workspace.bzl",
@@ -57,6 +69,13 @@ load(
 )
 
 bazel_skylib_workspace()
+
+load(
+    "@build_bazel_rules_nodejs//:index.bzl",
+    "node_repositories",
+)
+
+node_repositories()
 
 load(
     "@rules_haskell//haskell:repositories.bzl",

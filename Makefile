@@ -5,8 +5,9 @@ BAZEL_BINDIR := bazel-bin
 BAZEL_CONFIG :=
 BAZEL_PACKAGE :=
 BAZEL_TARGET :=
-BUILDDIR := .build
+BUILDDIR := $(CURDIR)/.build
 HIE_BIOS_OUTPUT :=
+PKG_RULES_PURESCRIPTDIR := pkg/rules_purescript
 VERSION_BAZELISK := 1.7.4
 
 # Based on https://stackoverflow.com/a/12099167/1549047.
@@ -44,15 +45,24 @@ $(BUILDDIR):
 	@mkdir -p $@
 
 .PHONY: build
-build: $(BAZEL_BINARY)
+build: $(BAZEL_BINARY) build-rules_purescript
 	$(BAZEL) build $(BAZEL_CONFIG) //...
 
+.PHONY: build-rules_purescript
+build-rules_purescript: $(BAZEL_BINARY)
+	cd $(PKG_RULES_PURESCRIPTDIR) && $(BAZEL) build $(BAZEL_CONFIG) //...
+
 .PHONY: clean
-clean:
+clean: clean-rules_purescript
 	$(info Cleaning bazel artifacts)
 	-$(BAZEL) clean
 	$(info Removing $(BUILDDIR))
 	@rm -fr $(BUILDDIR)
+
+.PHONY: clean-rules_purescript
+clean-rules_purescript: clean-rules_purescript
+	$(info Cleaning bazel artifacts from rules_purescript)
+	-cd $(PKG_RULES_PURESCRIPTDIR) && $(BAZEL) clean
 
 .PHONY: format
 format: format-haskell format-starlark
@@ -90,8 +100,12 @@ lint-starlark: $(BAZEL_BINARY)
 	$(BUILDIFIER) -r -lint=warn -mode=check .
 
 .PHONY: test
-test: $(BAZEL_BINARY)
+test: $(BAZEL_BINARY) test-rules_purescript
 	$(BAZEL) test $(BAZEL_CONFIG) //...
+
+.PHONY: test-rules_purescript
+test-rules_purescript: $(BAZEL_BINARY)
+	cd $(PKG_RULES_PURESCRIPTDIR) && $(BAZEL) test $(BAZEL_CONFIG) //...
 
 .PHONY: watch
 watch: $(BAZEL_BINARY)
