@@ -2,6 +2,17 @@ load(
     "@bazel_skylib//rules:build_test.bzl",
     "build_test",
 )
+load(
+    "@joneshf_rules_purescript//purescript:defs.bzl",
+    "purescript_library",
+)
+
+build_test(
+    name = "bar_library_test",
+    targets = [
+        ":bar_library",
+    ],
+)
 
 build_test(
     name = "bar_test",
@@ -36,5 +47,20 @@ genrule(
     ],
     visibility = [
         "//examples/purs-compile-module/dependencies:__subpackages__",
+    ],
+)
+
+# If we don't want to manage everything ourselves,
+# we can use a rule like below.
+# This is more likely how we'd actually want to interact with `bazel`.
+purescript_library(
+    name = "bar_library",
+    src = "Bar.purs",
+    module = "Bar",
+    visibility = [
+        "//examples/purs-compile-module/dependencies:__subpackages__",
+    ],
+    deps = [
+        "//examples/purs-compile-module/dependencies/foo:foo_library",
     ],
 )

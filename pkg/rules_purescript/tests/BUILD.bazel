@@ -1,4 +1,8 @@
 load(
+    "//purescript:defs.bzl",
+    "purescript_library",
+)
+load(
     ":actions_tests.bzl",
     "purs_bundle_tests_suite",
     "purs_compile_module_tests_suite",
@@ -6,10 +10,15 @@ load(
 load(
     ":rules_tests.bzl",
     "purescript_binary_tests_suite",
+    "purescript_library_tests_suite",
 )
 
 purescript_binary_tests_suite(
     name = "purescript_binary",
+)
+
+purescript_library_tests_suite(
+    name = "purescript_library",
 )
 
 purs_bundle_tests_suite(
@@ -18,4 +27,14 @@ purs_bundle_tests_suite(
 
 purs_compile_module_tests_suite(
     name = "purs_compile_module",
+)
+
+purescript_library(
+    name = "IO",
+    src = "IO.purs",
+    ffi = "IO.js",
+    module = "IO",
+    visibility = [
+        ":__subpackages__",
+    ],
 )

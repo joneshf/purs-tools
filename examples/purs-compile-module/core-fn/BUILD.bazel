@@ -2,6 +2,17 @@ load(
     "@bazel_skylib//rules:build_test.bzl",
     "build_test",
 )
+load(
+    "@joneshf_rules_purescript//purescript:defs.bzl",
+    "purescript_library",
+)
+
+build_test(
+    name = "core-fn_library_test",
+    targets = [
+        ":core-fn_library",
+    ],
+)
 
 build_test(
     name = "core-fn_test",
@@ -34,4 +45,13 @@ genrule(
     tools = [
         "//cmd/purs-compile-module",
     ],
+)
+
+# If we don't want to manage everything ourselves,
+# we can use a rule like below.
+# This is more likely how we'd actually want to interact with `bazel`.
+purescript_library(
+    name = "core-fn_library",
+    src = "Foo.purs",
+    module = "Foo",
 )

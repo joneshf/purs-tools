@@ -1,0 +1,58 @@
+load(
+    "//purescript:defs.bzl",
+    "purescript_binary",
+    "purescript_library",
+)
+
+purescript_binary(
+    name = "BinWithLibs",
+    src = "BinWithLibs.purs",
+    module = "BinWithLibs",
+    deps = [
+        ":Foo",
+        "//tests:IO",
+    ],
+)
+
+purescript_library(
+    name = "Bar",
+    src = "Bar.purs",
+    module = "Bar",
+    deps = [
+        ":Baz",
+        "//tests:IO",
+    ],
+)
+
+purescript_library(
+    name = "Baz",
+    src = "Baz.purs",
+    module = "Baz",
+    deps = [
+        "//tests:IO",
+    ],
+)
+
+purescript_library(
+    name = "Foo",
+    src = "Foo.purs",
+    module = "Foo",
+    deps = [
+        ":Bar",
+        ":Baz",
+        "//tests:IO",
+    ],
+)
+
+sh_test(
+    name = "bin_with_libs_test",
+    srcs = [
+        "bin_with_libs_test.sh",
+    ],
+    args = [
+        "$(rootpath :BinWithLibs)",
+    ],
+    data = [
+        ":BinWithLibs",
+    ],
+)

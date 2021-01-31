@@ -55,7 +55,7 @@ def purs_bundle(ctx, main_module, out, index_jss, foreign_jss = None):
         use_default_shell_env = True,
     )
 
-def purs_compile_module(ctx, module_name, src, index_js, ffi = None, foreign_js = None, ignore_warnings = False):
+def purs_compile_module(ctx, module_name, src, index_js, externs_files = None, ffi = None, foreign_js = None, ignore_warnings = False, signature_externs = None):
     """
     Compiles a single PureScript module from source.
 
@@ -64,6 +64,7 @@ def purs_compile_module(ctx, module_name, src, index_js, ffi = None, foreign_js 
         module_name: The PureScript module name.
         src: The PureScript source file to be compiled.
         index_js: Where to place the compiled JavaScript file
+        externs_files: The externs file dependencies for this PureScript module.
         ffi: An optional PureScript FFI file.
             If this is supplied,
             foreign_js must also be supplied.
@@ -71,7 +72,11 @@ def purs_compile_module(ctx, module_name, src, index_js, ffi = None, foreign_js 
             If this is supplied,
             foreign_js must also be supplied.
         ignore_warnings: Opt-out of warnings causing a failure.
+        signature_externs: Where to place the optional "signature" externs file.
     """
+
+    if externs_files == None:
+        externs_files = []
 
     if ffi != None and foreign_js == None:
         fail("Must either provide both `ffi` and `foreign_js` or neither")
@@ -89,6 +94,10 @@ def purs_compile_module(ctx, module_name, src, index_js, ffi = None, foreign_js 
     arguments.add("--purs-file", src.path)
     inputs.append(src)
 
+    for externs_file in externs_files:
+        arguments.add("--input-externs-file", externs_file.path)
+        inputs.append(externs_file)
+
     if ffi != None and foreign_js != None:
         arguments.add("--input-ffi-file", ffi.path)
         inputs.append(ffi)
@@ -98,6 +107,10 @@ def purs_compile_module(ctx, module_name, src, index_js, ffi = None, foreign_js 
 
     if ignore_warnings:
         arguments.add("--ignore-warnings")
+
+    if signature_externs != None:
+        arguments.add("--output-signature-externs-file", signature_externs.path)
+        outputs.append(signature_externs)
 
     ctx.actions.run_shell(
         arguments = [
