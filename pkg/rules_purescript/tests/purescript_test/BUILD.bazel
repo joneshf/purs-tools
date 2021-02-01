@@ -1,0 +1,30 @@
+load(
+    "//purescript:defs.bzl",
+    "purescript_binary",
+    "purescript_test",
+)
+
+purescript_binary(
+    name = "Hello",
+    src = "Hello.purs",
+    module = "Hello",
+    deps = [
+        "//tests:IO",
+    ],
+)
+
+purescript_test(
+    name = "HelloTest",
+    src = "HelloTest.purs",
+    args = [
+        "$(rootpath :Hello)",
+    ],
+    data = [
+        ":Hello",
+    ],
+    ffi = "HelloTest.js",
+    module = "HelloTest",
+    deps = [
+        "//tests:IO",
+    ],
+)
