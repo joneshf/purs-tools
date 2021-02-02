@@ -10,6 +10,10 @@ load(
     "@bazel_tools//tools/build_defs/repo:utils.bzl",
     "maybe",
 )
+load(
+    "//internal:repositories.bzl",
+    "purescript_download",
+)
 
 def rules_purescript_dependencies():
     """
@@ -36,3 +40,23 @@ def rules_purescript_dependencies():
             "https://github.com/bazelbuild/rules_nodejs/releases/download/3.0.0-rc.1/rules_nodejs-3.0.0-rc.1.tar.gz",
         ],
     )
+
+# buildifier: disable=unnamed-macro
+def rules_purescript_toolchains():
+    """
+    Registers the toolchains that `joneshf_rules_purescript` depends on.
+
+    This function should be loaded and called from WORKSPACE files.
+    """
+
+    purescript_download(
+        name = "joneshf_rules_purescript_purs_linux",
+        platform = "linux",
+    )
+    native.register_toolchains("@joneshf_rules_purescript_purs_linux//:toolchain")
+
+    purescript_download(
+        name = "joneshf_rules_purescript_purs_macos",
+        platform = "macos",
+    )
+    native.register_toolchains("@joneshf_rules_purescript_purs_macos//:toolchain")

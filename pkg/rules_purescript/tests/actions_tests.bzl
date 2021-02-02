@@ -28,7 +28,8 @@ def _purs_bundle_works_with_only_purescript_implementation_test(ctx):
     purs_bundle_action = find_action(env, actions, "PursBundle")
 
     inputs = [input.basename for input in purs_bundle_action.inputs.to_list()]
-    asserts.equals(env, 2, len(inputs))
+    asserts.equals(env, 3, len(inputs))
+    contains(env, inputs, "purs", "Expected purs to be an input")
     contains(env, inputs, "purescript-only-1.index.js", "Expected purescript-only-1.index.js to be an input")
     contains(env, inputs, "purescript-only-2.index.js", "Expected purescript-only-2.index.js to be an input")
 
@@ -59,6 +60,9 @@ def _purs_bundle_works_with_only_purescript_fake_implementation_rule(ctx):
 
 _purs_bundle_works_with_only_purescript_fake_rule = rule(
     implementation = _purs_bundle_works_with_only_purescript_fake_implementation_rule,
+    toolchains = [
+        "@joneshf_rules_purescript//purescript:toolchain_type",
+    ],
 )
 
 _purs_bundle_works_with_only_purescript_test = analysistest.make(
@@ -76,7 +80,8 @@ def _purs_bundle_works_with_purescript_and_ffi_implementation_test(ctx):
     purs_bundle_action = find_action(env, actions, "PursBundle")
 
     inputs = [input.basename for input in purs_bundle_action.inputs.to_list()]
-    asserts.equals(env, 4, len(inputs))
+    asserts.equals(env, 5, len(inputs))
+    contains(env, inputs, "purs", "Expected purs to be an input")
     contains(env, inputs, "purescript-and-ffi-1.foreign.js", "Expected purescript-and-ffi-1.foreign.js to be an input")
     contains(env, inputs, "purescript-and-ffi-2.foreign.js", "Expected purescript-and-ffi-2.foreign.js to be an input")
     contains(env, inputs, "purescript-and-ffi-1.index.js", "Expected purescript-and-ffi-1.index.js to be an input")
@@ -115,6 +120,9 @@ def _purs_bundle_works_with_purescript_and_ffi_fake_implementation_rule(ctx):
 
 _purs_bundle_works_with_purescript_and_ffi_fake_rule = rule(
     implementation = _purs_bundle_works_with_purescript_and_ffi_fake_implementation_rule,
+    toolchains = [
+        "@joneshf_rules_purescript//purescript:toolchain_type",
+    ],
 )
 
 _purs_bundle_works_with_purescript_and_ffi_test = analysistest.make(
@@ -146,6 +154,9 @@ def _purs_compile_module_fails_with_only_ffi_fake_implementation_rule(ctx):
 
 _purs_compile_module_fails_with_only_ffi_fake_rule = rule(
     implementation = _purs_compile_module_fails_with_only_ffi_fake_implementation_rule,
+    toolchains = [
+        "@joneshf_rules_purescript//purescript:toolchain_type",
+    ],
 )
 
 _purs_compile_module_fails_with_only_ffi_test = analysistest.make(
@@ -167,6 +178,9 @@ def _purs_compile_module_fails_with_only_foreign_js_fake_implementation_rule(ctx
 
 _purs_compile_module_fails_with_only_foreign_js_fake_rule = rule(
     implementation = _purs_compile_module_fails_with_only_foreign_js_fake_implementation_rule,
+    toolchains = [
+        "@joneshf_rules_purescript//purescript:toolchain_type",
+    ],
 )
 
 _purs_compile_module_fails_with_only_foreign_js_test = analysistest.make(
@@ -184,7 +198,8 @@ def _purs_compile_module_works_with_only_purescript_implementation_test(ctx):
     purs_compile_module_action = find_action(env, actions, "PursCompileModule")
 
     inputs = [input.basename for input in purs_compile_module_action.inputs.to_list()]
-    asserts.equals(env, 1, len(inputs))
+    asserts.equals(env, 2, len(inputs))
+    contains(env, inputs, "purs-compile-module", "Expected purs-compile-module to be an input")
     contains(env, inputs, "PureScriptOnly.purs", "Expected PureScriptOnly.purs to be an input")
 
     outputs = [output.basename for output in purs_compile_module_action.outputs.to_list()]
@@ -209,6 +224,9 @@ def _purs_compile_module_works_with_only_purescript_fake_implementation_rule(ctx
 
 _purs_compile_module_works_with_only_purescript_fake_rule = rule(
     implementation = _purs_compile_module_works_with_only_purescript_fake_implementation_rule,
+    toolchains = [
+        "@joneshf_rules_purescript//purescript:toolchain_type",
+    ],
 )
 
 _purs_compile_module_works_with_only_purescript_test = analysistest.make(
@@ -226,7 +244,8 @@ def _purs_compile_module_works_with_purescript_and_ffi_implementation_test(ctx):
     purs_compile_module_action = find_action(env, actions, "PursCompileModule")
 
     inputs = [input.basename for input in purs_compile_module_action.inputs.to_list()]
-    asserts.equals(env, 2, len(inputs))
+    asserts.equals(env, 3, len(inputs))
+    contains(env, inputs, "purs-compile-module", "Expected purs-compile-module to be an input")
     contains(env, inputs, "PureScriptAndFFI.purs", "Expected PureScriptAndFFI.purs to be an input")
     contains(env, inputs, "PureScriptAndFFI.js", "Expected PureScriptAndFFI.js to be an input")
 
@@ -259,6 +278,9 @@ def _purs_compile_module_works_with_purescript_and_ffi_fake_implementation_rule(
 
 _purs_compile_module_works_with_purescript_and_ffi_fake_rule = rule(
     implementation = _purs_compile_module_works_with_purescript_and_ffi_fake_implementation_rule,
+    toolchains = [
+        "@joneshf_rules_purescript//purescript:toolchain_type",
+    ],
 )
 
 _purs_compile_module_works_with_purescript_and_ffi_test = analysistest.make(

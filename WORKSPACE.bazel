@@ -59,6 +59,7 @@ local_repository(
 load(
     "@joneshf_rules_purescript//purescript:repositories.bzl",
     "rules_purescript_dependencies",
+    "rules_purescript_toolchains",
 )
 
 rules_purescript_dependencies()
@@ -129,6 +130,8 @@ rules_haskell_toolchains(
     locale = "en_US.utf8",
     version = "8.6.5",
 )
+
+rules_purescript_toolchains()
 
 stack_snapshot(
     name = "stackage",

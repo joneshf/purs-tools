@@ -32,7 +32,8 @@ def _purescript_binary_works_with_only_purescript_implementation_test(ctx):
     purs_compile_module_action = find_action(env, actions, "PursCompileModule")
 
     inputs = [input.basename for input in purs_compile_module_action.inputs.to_list()]
-    asserts.equals(env, 1, len(inputs))
+    asserts.equals(env, 2, len(inputs))
+    contains(env, inputs, "purs-compile-module", "Expected purs-compile-module to be an input")
     contains(env, inputs, "PureScriptOnly.purs", "Expected PureScriptOnly.purs to be an input")
 
     outputs = [output.basename for output in purs_compile_module_action.outputs.to_list()]
@@ -46,7 +47,8 @@ def _purescript_binary_works_with_only_purescript_implementation_test(ctx):
     purs_bundle_action = find_action(env, actions, "PursBundle")
 
     inputs = [input.basename for input in purs_bundle_action.inputs.to_list()]
-    asserts.equals(env, 1, len(inputs))
+    asserts.equals(env, 2, len(inputs))
+    contains(env, inputs, "purs", "Expected purs to be an input")
     contains(env, inputs, "index.js", "Expected index.js to be an input")
 
     outputs = [output.basename for output in purs_bundle_action.outputs.to_list()]
@@ -74,7 +76,8 @@ def _purescript_binary_works_with_purescript_and_ffi_implementation_test(ctx):
     purs_compile_module_action = find_action(env, actions, "PursCompileModule")
 
     inputs = [input.basename for input in purs_compile_module_action.inputs.to_list()]
-    asserts.equals(env, 2, len(inputs))
+    asserts.equals(env, 3, len(inputs))
+    contains(env, inputs, "purs-compile-module", "Expected purs-compile-module to be an input")
     contains(env, inputs, "PureScriptAndFFI.js", "Expected PureScriptAndFFI.js to be an input")
     contains(env, inputs, "PureScriptAndFFI.purs", "Expected PureScriptAndFFI.purs to be an input")
 
@@ -92,7 +95,8 @@ def _purescript_binary_works_with_purescript_and_ffi_implementation_test(ctx):
     purs_bundle_action = find_action(env, actions, "PursBundle")
 
     inputs = [input.basename for input in purs_bundle_action.inputs.to_list()]
-    asserts.equals(env, 2, len(inputs))
+    asserts.equals(env, 3, len(inputs))
+    contains(env, inputs, "purs", "Expected purs to be an input")
     contains(env, inputs, "foreign.js", "Expected foreign.js to be an input")
     contains(env, inputs, "index.js", "Expected index.js to be an input")
 
@@ -121,7 +125,8 @@ def _purescript_binary_works_with_dependencies_implementation_test(ctx):
     purs_compile_module_action = find_action(env, actions, "PursCompileModule")
 
     inputs = [input.basename for input in purs_compile_module_action.inputs.to_list()]
-    asserts.equals(env, 2, len(inputs))
+    asserts.equals(env, 3, len(inputs))
+    contains(env, inputs, "purs-compile-module", "Expected purs-compile-module to be an input")
     contains(env, inputs, "Foo.purs", "Expected Foo.purs to be an input")
     contains(env, inputs, "signature-externs.cbor", "Expected signature-externs.cbor to be an input")
 
@@ -139,7 +144,11 @@ def _purescript_binary_works_with_dependencies_implementation_test(ctx):
     for input in purs_bundle_action.inputs.to_list():
         inputs.append(paths.join(paths.basename(input.dirname), input.basename))
 
-    asserts.equals(env, 2, len(inputs))
+    asserts.equals(env, 3, len(inputs))
+
+    # The repository can change depending on where the tests are run.
+    # Only check the binary name.
+    contains(env, [input.basename for input in purs_compile_module_action.inputs.to_list()], "purs-compile-module", "Expected purs-compile-module to be an input")
     contains(env, inputs, "Foo/index.js", "Expected Foo/index.js to be an input")
     contains(env, inputs, "Bar/index.js", "Expected Bar/index.js to be an input")
 
@@ -168,7 +177,8 @@ def _purescript_library_works_with_only_purescript_implementation_test(ctx):
     purs_compile_module_action = find_action(env, actions, "PursCompileModule")
 
     inputs = [input.basename for input in purs_compile_module_action.inputs.to_list()]
-    asserts.equals(env, 1, len(inputs))
+    asserts.equals(env, 2, len(inputs))
+    contains(env, inputs, "purs-compile-module", "Expected purs-compile-module to be an input")
     contains(env, inputs, "PureScriptOnly.purs", "Expected PureScriptOnly.purs to be an input")
 
     outputs = [output.basename for output in purs_compile_module_action.outputs.to_list()]
@@ -196,7 +206,8 @@ def _purescript_library_works_with_purescript_and_ffi_implementation_test(ctx):
     purs_compile_module_action = find_action(env, actions, "PursCompileModule")
 
     inputs = [input.basename for input in purs_compile_module_action.inputs.to_list()]
-    asserts.equals(env, 2, len(inputs))
+    asserts.equals(env, 3, len(inputs))
+    contains(env, inputs, "purs-compile-module", "Expected purs-compile-module to be an input")
     contains(env, inputs, "PureScriptAndFFI.js", "Expected PureScriptAndFFI.js to be an input")
     contains(env, inputs, "PureScriptAndFFI.purs", "Expected PureScriptAndFFI.purs to be an input")
 
@@ -229,7 +240,8 @@ def _purescript_library_works_with_dependencies_implementation_test(ctx):
     purs_compile_module_action = find_action(env, actions, "PursCompileModule")
 
     inputs = [input.basename for input in purs_compile_module_action.inputs.to_list()]
-    asserts.equals(env, 2, len(inputs))
+    asserts.equals(env, 3, len(inputs))
+    contains(env, inputs, "purs-compile-module", "Expected purs-compile-module to be an input")
     contains(env, inputs, "Foo.purs", "Expected Foo.purs to be an input")
     contains(env, inputs, "signature-externs.cbor", "Expected signature-externs.cbor to be an input")
 

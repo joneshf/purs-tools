@@ -16,6 +16,10 @@ load(
     _purescript_binary = "purescript_binary",
     _purescript_library = "purescript_library",
 )
+load(
+    "//internal:toolchains.bzl",
+    _purescript_toolchain = "purescript_toolchain",
+)
 
 def purescript_binary(name, src, module, deps = None, ffi = None, ignore_warnings = False, **kwargs):
     """
@@ -88,5 +92,7 @@ def purescript_test(name, src, module, args = None, data = None, deps = None, ig
         entry_point = purescript_test_name,
         **kwargs
     )
+
+purescript_toolchain = _purescript_toolchain
 
 PureScriptModuleInfo = _PureScriptModuleInfo

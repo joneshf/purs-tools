@@ -3,11 +3,6 @@ Rules for building PureScript.
 """
 
 load(
-    "//internal:actions.bzl",
-    "purs_bundle",
-    "purs_compile_module",
-)
-load(
     "//internal:providers.bzl",
     "PureScriptModuleInfo",
 )
@@ -19,6 +14,8 @@ def _purescript_binary(ctx):
     Args:
         ctx: Analysis context.
     """
+
+    purs = ctx.toolchains["@joneshf_rules_purescript//purescript:toolchain_type"]
 
     prefix = "{prefix}%".format(
         prefix = ctx.label.name,
@@ -83,7 +80,7 @@ def _purescript_binary(ctx):
     )
     index_jss.append(index_js)
 
-    purs_compile_module(
+    purs.compile_module(
         ctx,
         externs_files = externs_files,
         ffi = ctx.file.ffi,
@@ -100,7 +97,7 @@ def _purescript_binary(ctx):
             prefix = prefix,
         ),
     )
-    purs_bundle(
+    purs.bundle(
         ctx,
         foreign_jss = foreign_jss,
         index_jss = index_jss,
@@ -156,6 +153,9 @@ Builds an executable program from PureScript source code.
 This will bundle up all of the JavaScript into a single file.
 """,
     executable = True,
+    toolchains = [
+        "@joneshf_rules_purescript//purescript:toolchain_type",
+    ],
 )
 
 def _purescript_library(ctx):
@@ -165,6 +165,8 @@ def _purescript_library(ctx):
     Args:
         ctx: Analysis context.
     """
+
+    purs = ctx.toolchains["@joneshf_rules_purescript//purescript:toolchain_type"]
 
     externs_files = []
     outputs = []
@@ -204,7 +206,7 @@ def _purescript_library(ctx):
     )
     outputs.append(index_js)
 
-    purs_compile_module(
+    purs.compile_module(
         ctx,
         externs_files = externs_files,
         ffi = ctx.file.ffi,
@@ -268,4 +270,7 @@ purescript_library = rule(
     doc = """
 Compiles a PureScript module to a JavaScript file.
 """,
+    toolchains = [
+        "@joneshf_rules_purescript//purescript:toolchain_type",
+    ],
 )

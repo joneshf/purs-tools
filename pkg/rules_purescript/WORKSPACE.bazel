@@ -28,6 +28,7 @@ http_archive(
 load(
     "@joneshf_rules_purescript//purescript:repositories.bzl",
     "rules_purescript_dependencies",
+    "rules_purescript_toolchains",
 )
 
 rules_purescript_dependencies()
@@ -54,3 +55,7 @@ load(
 )
 
 node_repositories()
+
+# Toolchains
+
+rules_purescript_toolchains()

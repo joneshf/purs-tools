@@ -18,6 +18,8 @@ def purs_bundle(ctx, main_module, out, index_jss, foreign_jss = None):
             E.g. `Foo.Bar/foreign.js`
     """
 
+    purs = ctx.toolchains["@joneshf_rules_purescript//purescript:toolchain_type"]
+
     if foreign_jss == None:
         foreign_jss = []
 
@@ -41,11 +43,11 @@ def purs_bundle(ctx, main_module, out, index_jss, foreign_jss = None):
 
     outputs.append(out)
 
-    ctx.actions.run_shell(
+    ctx.actions.run(
         arguments = [
             arguments,
         ],
-        command = "purs $@",
+        executable = purs.internal.purs,
         inputs = inputs,
         mnemonic = "PursBundle",
         outputs = outputs,
@@ -74,6 +76,8 @@ def purs_compile_module(ctx, module_name, src, index_js, externs_files = None, f
         ignore_warnings: Opt-out of warnings causing a failure.
         signature_externs: Where to place the optional "signature" externs file.
     """
+
+    purs = ctx.toolchains["@joneshf_rules_purescript//purescript:toolchain_type"]
 
     if externs_files == None:
         externs_files = []
@@ -112,11 +116,11 @@ def purs_compile_module(ctx, module_name, src, index_js, externs_files = None, f
         arguments.add("--output-signature-externs-file", signature_externs.path)
         outputs.append(signature_externs)
 
-    ctx.actions.run_shell(
+    ctx.actions.run(
         arguments = [
             arguments,
         ],
-        command = "purs-compile-module $@",
+        executable = purs.internal.purs_compile_module,
         inputs = inputs,
         mnemonic = "PursCompileModule",
         outputs = outputs,
