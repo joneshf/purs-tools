@@ -49,7 +49,7 @@ build: $(BAZEL_BINARY) build-rules_purescript
 	$(BAZEL) build $(BAZEL_CONFIG) //...
 
 .PHONY: build-rules_purescript
-build-rules_purescript: $(BAZEL_BINARY)
+build-rules_purescript: $(BAZEL_BINARY) gazelle-rules_purescript
 	cd $(PKG_RULES_PURESCRIPTDIR) && $(BAZEL) build $(BAZEL_CONFIG) //...
 
 .PHONY: clean
@@ -61,7 +61,7 @@ clean: clean-rules_purescript
 
 .PHONY: clean-rules_purescript
 clean-rules_purescript: clean-rules_purescript
-	$(info Cleaning bazel artifacts from rules_purescript)
+	$(info Cleaning bazel artifacts for rules_purescript)
 	-cd $(PKG_RULES_PURESCRIPTDIR) && $(BAZEL) clean
 
 .PHONY: format
@@ -78,6 +78,20 @@ format-haskell: $(BAZEL_BINARY)
 format-starlark: $(BAZEL_BINARY)
 	$(BAZEL) build //tools/buildifier
 	$(BUILDIFIER) -r .
+
+.PHONY: gazelle
+gazelle: gazelle-rules_purescript
+
+.PHONY: gazelle-rules_purescript
+gazelle-rules_purescript: $(BAZEL_BINARY)
+	cd $(PKG_RULES_PURESCRIPTDIR) && $(BAZEL) run //:gazelle
+
+.PHONY: gazelle-update-repos
+gazelle-update-repos: gazelle-update-repos-rules_purescript
+
+.PHONY: gazelle-update-repos-rules_purescript
+gazelle-update-repos-rules_purescript: $(BAZEL_BINARY)
+	cd $(PKG_RULES_PURESCRIPTDIR) && $(BAZEL) run //:gazelle -- update-repos -from_file=go.mod -prune=true -to_macro=internal_deps.bzl%go_dependencies
 
 PHONY: hie-bios
 hie-bios: $(BAZEL_BINARY)
@@ -104,7 +118,7 @@ test: $(BAZEL_BINARY) test-rules_purescript
 	$(BAZEL) test $(BAZEL_CONFIG) //...
 
 .PHONY: test-rules_purescript
-test-rules_purescript: $(BAZEL_BINARY)
+test-rules_purescript: $(BAZEL_BINARY) gazelle-rules_purescript
 	cd $(PKG_RULES_PURESCRIPTDIR) && $(BAZEL) test $(BAZEL_CONFIG) //...
 
 .PHONY: watch

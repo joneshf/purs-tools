@@ -27,13 +27,41 @@ http_archive(
 
 load(
     "@joneshf_rules_purescript//purescript:repositories.bzl",
+    "bazel_gazelle_dependencies",
     "rules_purescript_dependencies",
     "rules_purescript_toolchains",
 )
 
+bazel_gazelle_dependencies()
+
 rules_purescript_dependencies()
 
 # Now load the dendencies we need for development.
+load(
+    "@io_bazel_rules_go//go:deps.bzl",
+    "go_register_toolchains",
+    "go_rules_dependencies",
+)
+
+go_rules_dependencies()
+
+go_register_toolchains(
+    version = "1.15.7",
+)
+
+# gazelle:repo bazel_gazelle
+load(
+    "@bazel_gazelle//:deps.bzl",
+    "gazelle_dependencies",
+)
+load("//:internal_deps.bzl", "go_dependencies")
+
+# gazelle:repository_macro internal_deps.bzl%go_dependencies
+go_dependencies()
+
+gazelle_dependencies(
+    go_repository_default_config = "@//:WORKSPACE.bazel",
+)
 
 load(
     "@bazel_skylib//:workspace.bzl",

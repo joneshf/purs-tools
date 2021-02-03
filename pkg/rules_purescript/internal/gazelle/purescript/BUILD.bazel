@@ -1,0 +1,19 @@
+load(
+    "@io_bazel_rules_go//go:def.bzl",
+    "go_library",
+)
+
+go_library(
+    name = "purescript",
+    srcs = ["language.go"],
+    importpath = "github.com/joneshf/purs-tools/pkg/rules_purescript/internal/gazelle/purescript",
+    visibility = ["//visibility:public"],
+    deps = [
+        "@bazel_gazelle//config:go_default_library",
+        "@bazel_gazelle//label:go_default_library",
+        "@bazel_gazelle//language:go_default_library",
+        "@bazel_gazelle//repo:go_default_library",
+        "@bazel_gazelle//resolve:go_default_library",
+        "@bazel_gazelle//rule:go_default_library",
+    ],
+)

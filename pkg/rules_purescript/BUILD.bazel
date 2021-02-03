@@ -1,0 +1,23 @@
+load(
+    "@bazel_gazelle//:def.bzl",
+    "DEFAULT_LANGUAGES",
+    "gazelle",
+    "gazelle_binary",
+)
+
+# gazelle:prefix github.com/joneshf/purs-tools/pkg/rules_purescript
+gazelle(
+    name = "gazelle",
+    gazelle = ":gazelle_purescript",
+)
+
+gazelle_binary(
+    name = "gazelle_purescript",
+    languages =
+        DEFAULT_LANGUAGES + [
+            "@joneshf_rules_purescript//internal/gazelle/purescript",
+        ],
+    visibility = [
+        "//visibility:public",
+    ],
+)

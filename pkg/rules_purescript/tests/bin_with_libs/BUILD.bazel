@@ -18,6 +18,7 @@ purescript_library(
     name = "Bar",
     src = "Bar.purs",
     module = "Bar",
+    visibility = ["//visibility:public"],
     deps = [
         ":Baz",
         "//tests:IO",
@@ -28,6 +29,7 @@ purescript_library(
     name = "Baz",
     src = "Baz.purs",
     module = "Baz",
+    visibility = ["//visibility:public"],
     deps = [
         "//tests:IO",
     ],
@@ -37,6 +39,7 @@ purescript_library(
     name = "Foo",
     src = "Foo.purs",
     module = "Foo",
+    visibility = ["//visibility:public"],
     deps = [
         ":Bar",
         ":Baz",
