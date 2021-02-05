@@ -247,8 +247,8 @@ func (p *pureScript) GenerateRules(args language.GenerateArgs) language.Generate
 	}
 
 	for _, regularFile := range args.RegularFiles {
-		isDependency := bowerSource(args.Rel) || spagoSource(args.Rel)
 		if isPureScriptFile(regularFile) {
+			isDependency := bowerSource(args.Rel) || spagoSource(args.Rel)
 			p.generatePureScriptRules(args, regularFile, isDependency, &result)
 		}
 	}
@@ -301,8 +301,7 @@ func bowerSource(filename string) bool {
 	return len(paths) >= 3 &&
 		paths[0] == "bower_components" &&
 		strings.HasPrefix(paths[1], "purescript-") &&
-		paths[2] == "src" &&
-		isPureScriptFile(filename)
+		paths[2] == "src"
 }
 
 func (p *pureScript) generatePureScriptRules(args language.GenerateArgs, pureScriptFilename string, isDependency bool, result *language.GenerateResult) {
@@ -390,8 +389,7 @@ func spagoSource(filename string) bool {
 	paths := strings.Split(filename, "/")
 	return len(paths) >= 4 &&
 		paths[0] == ".spago" &&
-		paths[3] == "src" &&
-		isPureScriptFile(filename)
+		paths[3] == "src"
 }
 
 // Fix repairs deprecated usage of language-specific rules in f. This is
