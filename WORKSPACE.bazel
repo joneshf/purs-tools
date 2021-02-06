@@ -147,6 +147,7 @@ stack_snapshot(
     local_snapshot = "//:snapshot.yaml",
     packages = [
         # our dependencies
+        "hedgehog",
         "optparse-applicative",
         "rio",
         "purescript",

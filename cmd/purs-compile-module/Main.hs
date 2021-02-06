@@ -408,27 +408,7 @@ compileModeRun mode = case mode of
           Left parseErrors -> Control.Monad.Error.Class.throwError (Language.PureScript.CST.toMultipleErrors pureScriptFile parseErrors)
           Right pureScriptModule -> pure pureScriptModule
         Language.PureScript.Make.rebuildModule (makeActions coreFnFiles externsFiles javaScriptFiles) externs pureScriptModule
-    case result of
-      (Left errors, warnings)
-        | ignoreWarnings,
-          Language.PureScript.Errors.nonEmpty errors,
-          Language.PureScript.Errors.nonEmpty warnings -> do
-          pure (Left (Error.ErrorsAndWarnings {Error.errors, Error.warnings}))
-        | ignoreWarnings,
-          Language.PureScript.Errors.nonEmpty warnings -> do
-          pure (Left (Error.AllWarnings {Error.warnings}))
-        | Language.PureScript.Errors.nonEmpty warnings -> do
-          pure (Left (Error.AllErrors {Error.errors = errors <> warnings}))
-        | Language.PureScript.Errors.nonEmpty errors -> do
-          pure (Left (Error.AllErrors {Error.errors = errors}))
-        | otherwise -> do
-          pure (Right "")
-      (Right _, warnings)
-        | ignoreWarnings,
-          Language.PureScript.Errors.nonEmpty warnings -> do
-          pure (Left (Error.AllWarnings {Error.warnings}))
-        | Language.PureScript.Errors.nonEmpty warnings -> pure (Left (Error.AllErrors {Error.errors = warnings}))
-        | otherwise -> pure (Right "")
+    pure (Error.fromRebuildModule ignoreWarnings result)
 
 -- |
 -- We have to convert to what the module signature needs for its imports so it we can sort the externs properly.

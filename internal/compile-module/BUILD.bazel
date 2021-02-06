@@ -2,6 +2,7 @@ load(
     "@rules_haskell//haskell:defs.bzl",
     "haskell_library",
     "haskell_repl",
+    "haskell_test",
 )
 
 haskell_library(
@@ -33,5 +34,28 @@ haskell_repl(
     collect_data = False,
     deps = [
         ":compile-module",
+    ],
+)
+
+haskell_test(
+    name = "fromRebuildModule_test",
+    srcs = [
+        "ErrorTest.hs",
+    ],
+    compiler_flags = [
+        "-Wall",
+        "-Wcompat",
+        "-Werror",
+        "-Wincomplete-record-updates",
+        "-Wincomplete-uni-patterns",
+        "-Wmissing-methods",
+        "-Wredundant-constraints",
+    ],
+    main_function = "ErrorTest.fromRebuildModule",
+    deps = [
+        ":compile-module",
+        "@stackage//:hedgehog",
+        "@stackage//:purescript",
+        "@stackage//:rio",
     ],
 )
