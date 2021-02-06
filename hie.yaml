@@ -6,3 +6,10 @@ cradle:
           bios:
             shell: make hie-bios BAZEL_PACKAGE=cmd/purs-compile-module BAZEL_TARGET=hie-bios HIE_BIOS_OUTPUT=${HIE_BIOS_OUTPUT}
             with-ghc: bazel-bin/ghc
+
+    - path: internal/compile-module
+      config:
+        cradle:
+          bios:
+            shell: make hie-bios BAZEL_PACKAGE=internal/compile-module BAZEL_TARGET=hie-bios HIE_BIOS_OUTPUT=${HIE_BIOS_OUTPUT}
+            with-ghc: bazel-bin/ghc

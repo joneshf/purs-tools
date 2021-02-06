@@ -1,0 +1,37 @@
+load(
+    "@rules_haskell//haskell:defs.bzl",
+    "haskell_library",
+    "haskell_repl",
+)
+
+haskell_library(
+    name = "compile-module",
+    package_name = "compile-module",
+    srcs = [
+        "Error.hs",
+    ],
+    compiler_flags = [
+        "-Wall",
+        "-Wcompat",
+        "-Werror",
+        "-Wincomplete-record-updates",
+        "-Wincomplete-uni-patterns",
+        "-Wmissing-methods",
+        "-Wredundant-constraints",
+    ],
+    visibility = [
+        "//cmd/purs-compile-module:__subpackages__",
+    ],
+    deps = [
+        "@stackage//:purescript",
+        "@stackage//:rio",
+    ],
+)
+
+haskell_repl(
+    name = "hie-bios",
+    collect_data = False,
+    deps = [
+        ":compile-module",
+    ],
+)

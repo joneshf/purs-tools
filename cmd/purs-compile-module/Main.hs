@@ -14,6 +14,7 @@ import qualified "mtl" Control.Monad.Error.Class
 import qualified "purescript" Control.Monad.Supply
 import qualified "containers" Data.Map
 import qualified "base" Data.Version
+import qualified "compile-module" Error
 import qualified "purescript" Language.PureScript
 import qualified "purescript" Language.PureScript.AST.Declarations
 import qualified "purescript" Language.PureScript.AST.SourcePos
@@ -206,32 +207,6 @@ instance Display CompileModeJavaScript where
         <> " }"
 
 -- |
--- Any errors we might run into that we want to return at the end of the program.
-data Error
-  = AllErrors
-      { errors :: Language.PureScript.Errors.MultipleErrors
-      }
-  | AllWarnings
-      { warnings :: Language.PureScript.Errors.MultipleErrors
-      }
-  | ErrorsAndWarnings
-      { errors :: Language.PureScript.Errors.MultipleErrors,
-        warnings :: Language.PureScript.Errors.MultipleErrors
-      }
-
-instance Display Error where
-  display :: Error -> Utf8Builder
-  display error = case error of
-    AllErrors {errors} ->
-      fromString (Language.PureScript.Errors.prettyPrintMultipleErrors Language.PureScript.Errors.defaultPPEOptions errors)
-    AllWarnings {warnings} ->
-      fromString (Language.PureScript.Errors.prettyPrintMultipleWarnings Language.PureScript.Errors.defaultPPEOptions warnings)
-    ErrorsAndWarnings {errors, warnings} ->
-      fromString (Language.PureScript.Errors.prettyPrintMultipleWarnings Language.PureScript.Errors.defaultPPEOptions warnings)
-        <> newline
-        <> fromString (Language.PureScript.Errors.prettyPrintMultipleErrors Language.PureScript.Errors.defaultPPEOptions errors)
-
--- |
 -- The different modes we can run in.
 data Mode
   = -- |
@@ -417,7 +392,7 @@ compileModeParserInfo = Options.Applicative.info compileModeParser description
 -- We handle the different alternates of @CompileMode@ and run each one appropriately.
 compileModeRun ::
   CompileMode ->
-  RIO SimpleApp (Either Error Utf8Builder)
+  RIO SimpleApp (Either Error.Error Utf8Builder)
 compileModeRun mode = case mode of
   CompileMode {coreFnFiles, externsFiles, ignoreWarnings, javaScriptFiles, pureScriptFile} -> do
     logDebugS "purs-compile-module" ("Processing compile mode: " <> display mode)
@@ -438,21 +413,21 @@ compileModeRun mode = case mode of
         | ignoreWarnings,
           Language.PureScript.Errors.nonEmpty errors,
           Language.PureScript.Errors.nonEmpty warnings -> do
-          pure (Left (ErrorsAndWarnings {errors, warnings}))
+          pure (Left (Error.ErrorsAndWarnings {Error.errors, Error.warnings}))
         | ignoreWarnings,
           Language.PureScript.Errors.nonEmpty warnings -> do
-          pure (Left (AllWarnings {warnings}))
+          pure (Left (Error.AllWarnings {Error.warnings}))
         | Language.PureScript.Errors.nonEmpty warnings -> do
-          pure (Left (AllErrors {errors = errors <> warnings}))
+          pure (Left (Error.AllErrors {Error.errors = errors <> warnings}))
         | Language.PureScript.Errors.nonEmpty errors -> do
-          pure (Left (AllErrors {errors = errors}))
+          pure (Left (Error.AllErrors {Error.errors = errors}))
         | otherwise -> do
           pure (Right "")
       (Right _, warnings)
         | ignoreWarnings,
           Language.PureScript.Errors.nonEmpty warnings -> do
-          pure (Left (AllWarnings {warnings}))
-        | Language.PureScript.Errors.nonEmpty warnings -> pure (Left (AllErrors {errors = warnings}))
+          pure (Left (Error.AllWarnings {Error.warnings}))
+        | Language.PureScript.Errors.nonEmpty warnings -> pure (Left (Error.AllErrors {Error.errors = warnings}))
         | otherwise -> pure (Right "")
 
 -- |
@@ -574,13 +549,13 @@ main = do
             Version versionMode -> versionModeRun versionMode
           case result of
             Left error -> case error of
-              AllErrors {} -> do
+              Error.AllErrors {} -> do
                 logErrorS "purs-compile-module" (display error)
                 exitFailure
-              AllWarnings {} -> do
+              Error.AllWarnings {} -> do
                 logWarnS "purs-compile-module" (display error)
                 exitSuccess
-              ErrorsAndWarnings {} -> do
+              Error.ErrorsAndWarnings {} -> do
                 logErrorS "purs-compile-module" (display error)
                 exitFailure
             Right output -> do
@@ -903,7 +878,7 @@ versionModeParserInfo = Options.Applicative.info versionModeParser description
 -- We handle the different alternates of @VersionMode@ and run each one appropriately.
 versionModeRun ::
   VersionMode ->
-  RIO SimpleApp (Either Error Utf8Builder)
+  RIO SimpleApp (Either Error.Error Utf8Builder)
 versionModeRun mode = do
   logDebugS "purs-compile-module" ("Processing version mode: " <> display mode)
   case mode of
@@ -916,7 +891,7 @@ versionModeRun mode = do
 -- - The version of the underlying `purs` program.
 --
 -- This is because people generally need this information when they're diagnosing issues.
-versionModeRunHuman :: RIO SimpleApp (Either Error Utf8Builder)
+versionModeRunHuman :: RIO SimpleApp (Either Error.Error Utf8Builder)
 versionModeRunHuman = do
   logDebugS "purs-compile-module" "Rendering human-readable version"
   pure
@@ -933,7 +908,7 @@ versionModeRunHuman = do
 -- |
 -- We want to only provide the version of our `purs-compile-module` program.
 -- The intent behind providing a simple version is that some other program can easily parse the version if it's plain.
-versionModeRunNumeric :: RIO SimpleApp (Either Error Utf8Builder)
+versionModeRunNumeric :: RIO SimpleApp (Either Error.Error Utf8Builder)
 versionModeRunNumeric = do
   logDebugS "purs-compile-module" "Rendering numeric version"
   pure

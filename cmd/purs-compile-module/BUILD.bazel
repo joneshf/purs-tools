@@ -33,6 +33,7 @@ haskell_binary(
         ":base",
         ":containers",
         ":mtl",
+        "//internal/compile-module",
         "@stackage//:optparse-applicative",
         "@stackage//:purescript",
         "@stackage//:rio",
