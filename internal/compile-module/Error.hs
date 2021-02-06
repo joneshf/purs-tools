@@ -7,6 +7,7 @@
 
 module Error
   ( Error (..),
+    exit,
     fromRebuildModule,
   )
 where
@@ -39,6 +40,30 @@ instance Display Error where
       fromString (Language.PureScript.Errors.prettyPrintMultipleWarnings Language.PureScript.Errors.defaultPPEOptions warnings)
         <> newline
         <> fromString (Language.PureScript.Errors.prettyPrintMultipleErrors Language.PureScript.Errors.defaultPPEOptions errors)
+
+-- |
+-- Decide how to exit based on which error we've got.
+-- We basically only exit success if there are only warnings.
+-- It might seem like we need more information to determine whether warnings should be treated as errors or not.
+-- But if a warning should be an error,
+-- it should be made into an error instead of masquerading around as a warning.
+exit ::
+  forall a env.
+  ( HasLogFunc env
+  ) =>
+  LogSource ->
+  Error ->
+  RIO env a
+exit source error = case error of
+  Error.AllErrors {} -> do
+    logErrorS source (display error)
+    exitFailure
+  Error.AllWarnings {} -> do
+    logWarnS source (display error)
+    exitSuccess
+  Error.ErrorsAndWarnings {} -> do
+    logErrorS source (display error)
+    exitFailure
 
 -- |
 -- Since the 'Language.PureScript.Errors.MultipleErrors' can be empty,

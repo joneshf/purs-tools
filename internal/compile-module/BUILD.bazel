@@ -38,6 +38,29 @@ haskell_repl(
 )
 
 haskell_test(
+    name = "exit_test",
+    srcs = [
+        "ErrorTest.hs",
+    ],
+    compiler_flags = [
+        "-Wall",
+        "-Wcompat",
+        "-Werror",
+        "-Wincomplete-record-updates",
+        "-Wincomplete-uni-patterns",
+        "-Wmissing-methods",
+        "-Wredundant-constraints",
+    ],
+    main_function = "ErrorTest.exit",
+    deps = [
+        ":compile-module",
+        "@stackage//:hedgehog",
+        "@stackage//:purescript",
+        "@stackage//:rio",
+    ],
+)
+
+haskell_test(
     name = "fromRebuildModule_test",
     srcs = [
         "ErrorTest.hs",

@@ -528,16 +528,7 @@ main = do
             Compile compileMode -> compileModeRun compileMode
             Version versionMode -> versionModeRun versionMode
           case result of
-            Left error -> case error of
-              Error.AllErrors {} -> do
-                logErrorS "purs-compile-module" (display error)
-                exitFailure
-              Error.AllWarnings {} -> do
-                logWarnS "purs-compile-module" (display error)
-                exitSuccess
-              Error.ErrorsAndWarnings {} -> do
-                logErrorS "purs-compile-module" (display error)
-                exitFailure
+            Left error -> Error.exit "purs-compile-module" error
             Right output -> do
               hPutBuilder stdout (getUtf8Builder output)
               exitSuccess
