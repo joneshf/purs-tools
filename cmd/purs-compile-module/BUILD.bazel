@@ -31,8 +31,6 @@ haskell_binary(
     ],
     deps = [
         ":base",
-        ":containers",
-        ":mtl",
         "//internal/compile-module",
         "@stackage//:optparse-applicative",
         "@stackage//:purescript",
@@ -50,12 +48,4 @@ haskell_repl(
 
 haskell_toolchain_library(
     name = "base",
-)
-
-haskell_toolchain_library(
-    name = "containers",
-)
-
-haskell_toolchain_library(
-    name = "mtl",
 )

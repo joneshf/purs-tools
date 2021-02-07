@@ -3,12 +3,14 @@ load(
     "haskell_library",
     "haskell_repl",
     "haskell_test",
+    "haskell_toolchain_library",
 )
 
 haskell_library(
     name = "compile-module",
     package_name = "compile-module",
     srcs = [
+        "CompileModule.hs",
         "Error.hs",
     ],
     compiler_flags = [
@@ -24,6 +26,9 @@ haskell_library(
         "//cmd/purs-compile-module:__subpackages__",
     ],
     deps = [
+        ":containers",
+        ":mtl",
+        "@stackage//:optparse-applicative",
         "@stackage//:purescript",
         "@stackage//:rio",
     ],
@@ -81,4 +86,12 @@ haskell_test(
         "@stackage//:purescript",
         "@stackage//:rio",
     ],
+)
+
+haskell_toolchain_library(
+    name = "containers",
+)
+
+haskell_toolchain_library(
+    name = "mtl",
 )
