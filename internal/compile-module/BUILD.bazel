@@ -12,6 +12,7 @@ haskell_library(
     srcs = [
         "CompileModule.hs",
         "Error.hs",
+        "Version.hs",
     ],
     compiler_flags = [
         "-Wall",
@@ -26,6 +27,7 @@ haskell_library(
         "//cmd/purs-compile-module:__subpackages__",
     ],
     deps = [
+        ":base",
         ":containers",
         ":mtl",
         "@stackage//:optparse-applicative",
@@ -86,6 +88,10 @@ haskell_test(
         "@stackage//:purescript",
         "@stackage//:rio",
     ],
+)
+
+haskell_toolchain_library(
+    name = "base",
 )
 
 haskell_toolchain_library(

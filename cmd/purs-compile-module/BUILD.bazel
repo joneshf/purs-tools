@@ -2,7 +2,6 @@ load(
     "@rules_haskell//haskell:defs.bzl",
     "haskell_binary",
     "haskell_repl",
-    "haskell_toolchain_library",
 )
 
 haskell_binary(
@@ -30,10 +29,8 @@ haskell_binary(
         "//examples:__subpackages__",
     ],
     deps = [
-        ":base",
         "//internal/compile-module",
         "@stackage//:optparse-applicative",
-        "@stackage//:purescript",
         "@stackage//:rio",
     ],
 )
@@ -44,8 +41,4 @@ haskell_repl(
     deps = [
         ":purs-compile-module",
     ],
-)
-
-haskell_toolchain_library(
-    name = "base",
 )
