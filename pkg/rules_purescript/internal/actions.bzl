@@ -71,7 +71,8 @@ def purs_compile_module(
         ffi = None,
         foreign_js = None,
         ignore_warnings = False,
-        signature_externs = None):
+        signature_externs = None,
+        standard_externs = None):
     """
     Compiles a single PureScript module from source.
 
@@ -89,6 +90,7 @@ def purs_compile_module(
             foreign_js must also be supplied.
         ignore_warnings: Opt-out of warnings causing a failure.
         signature_externs: Where to place the optional "signature" externs file.
+        standard_externs: Where to place the optional "standard" externs file.
     """
 
     purs = ctx.toolchains["@joneshf_rules_purescript//purescript:toolchain_type"]
@@ -129,6 +131,10 @@ def purs_compile_module(
     if signature_externs != None:
         arguments.add("--output-signature-externs-file", signature_externs.path)
         outputs.append(signature_externs)
+
+    if standard_externs != None:
+        arguments.add("--output-standard-externs-file", standard_externs.path)
+        outputs.append(standard_externs)
 
     ctx.actions.run(
         arguments = [

@@ -199,6 +199,13 @@ def _purescript_library(ctx):
     )
     outputs.append(signature_externs_cbor)
 
+    standard_externs_cbor = ctx.actions.declare_file(
+        "{module}/standard-externs.cbor".format(
+            module = ctx.attr.module,
+        ),
+    )
+    outputs.append(standard_externs_cbor)
+
     index_js = ctx.actions.declare_file(
         "{module}/index.js".format(
             module = ctx.attr.module,
@@ -216,6 +223,7 @@ def _purescript_library(ctx):
         module_name = ctx.attr.module,
         src = ctx.file.src,
         signature_externs = signature_externs_cbor,
+        standard_externs = standard_externs_cbor,
     )
 
     return [
@@ -228,6 +236,7 @@ def _purescript_library(ctx):
                 javascript_file = index_js,
                 module_name = ctx.attr.module,
                 signature_externs = signature_externs_cbor,
+                standard_externs = standard_externs_cbor,
             ),
             deps = depset(
                 direct = [dep[PureScriptModuleInfo].info for dep in ctx.attr.deps],

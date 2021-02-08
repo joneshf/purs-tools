@@ -182,13 +182,15 @@ def _purescript_library_works_with_only_purescript_implementation_test(ctx):
     contains(env, inputs, "PureScriptOnly.purs", "Expected PureScriptOnly.purs to be an input")
 
     outputs = [output.basename for output in purs_compile_module_action.outputs.to_list()]
-    asserts.equals(env, 2, len(outputs))
+    asserts.equals(env, 3, len(outputs))
     contains(env, outputs, "index.js", "Expected index.js to be an output")
     contains(env, outputs, "signature-externs.cbor", "Expected signature-externs.cbor to be an output")
+    contains(env, outputs, "standard-externs.cbor", "Expected standard-externs.cbor to be an output")
 
     argv = purs_compile_module_action.argv
     contains(env, argv, "--output-javascript-file", "Expected --output-javascript-file to be an argument")
     contains(env, argv, "--output-signature-externs-file", "Expected --output-signature-externs-file to be an argument")
+    contains(env, argv, "--output-standard-externs-file", "Expected --output-standard-externs-file to be an argument")
     contains(env, argv, "--purs-file", "Expected --purs-file to be an argument")
     return analysistest.end(env)
 
@@ -212,16 +214,18 @@ def _purescript_library_works_with_purescript_and_ffi_implementation_test(ctx):
     contains(env, inputs, "PureScriptAndFFI.purs", "Expected PureScriptAndFFI.purs to be an input")
 
     outputs = [output.basename for output in purs_compile_module_action.outputs.to_list()]
-    asserts.equals(env, 3, len(outputs))
+    asserts.equals(env, 4, len(outputs))
     contains(env, outputs, "foreign.js", "Expected foreign.js to be an output")
     contains(env, outputs, "index.js", "Expected index.js to be an output")
     contains(env, outputs, "signature-externs.cbor", "Expected signature-externs.cbor to be an output")
+    contains(env, outputs, "standard-externs.cbor", "Expected standard-externs.cbor to be an output")
 
     argv = purs_compile_module_action.argv
     contains(env, argv, "--input-ffi-file", "Expected --input-ffi-file to be an argument")
     contains(env, argv, "--output-ffi-file", "Expected --output-ffi-file to be an argument")
     contains(env, argv, "--output-javascript-file", "Expected --output-javascript-file to be an argument")
     contains(env, argv, "--output-signature-externs-file", "Expected --output-signature-externs-file to be an argument")
+    contains(env, argv, "--output-standard-externs-file", "Expected --output-standard-externs-file to be an argument")
     contains(env, argv, "--purs-file", "Expected --purs-file to be an argument")
 
     return analysistest.end(env)
@@ -246,13 +250,15 @@ def _purescript_library_works_with_dependencies_implementation_test(ctx):
     contains(env, inputs, "signature-externs.cbor", "Expected signature-externs.cbor to be an input")
 
     outputs = [output.basename for output in purs_compile_module_action.outputs.to_list()]
-    asserts.equals(env, 2, len(outputs))
+    asserts.equals(env, 3, len(outputs))
     contains(env, outputs, "index.js", "Expected index.js to be an output")
     contains(env, outputs, "signature-externs.cbor", "Expected signature-externs.cbor to be an output")
+    contains(env, outputs, "standard-externs.cbor", "Expected standard-externs.cbor to be an output")
 
     argv = purs_compile_module_action.argv
     contains(env, argv, "--output-javascript-file", "Expected --output-javascript-file to be an argument")
     contains(env, argv, "--output-signature-externs-file", "Expected --output-signature-externs-file to be an argument")
+    contains(env, argv, "--output-standard-externs-file", "Expected --output-standard-externs-file to be an argument")
     contains(env, argv, "--purs-file", "Expected --purs-file to be an argument")
 
     return analysistest.end(env)

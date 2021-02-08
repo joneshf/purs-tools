@@ -14,6 +14,7 @@ Has the following fields:
     javascript_file: "The compiled JavaScript file",
     module_name: "The actual name of this PureScript module.",
     signature_externs: "The \"signature\" externs file.",
+    standard_externs: "The \"standard\" externs file.",
 """,
     },
 )
@@ -55,6 +56,7 @@ Args:
         If this is supplied,
         foreign_js must also be supplied.
     signature_externs: Where to place the optional "signature" externs file.
+    standard_externs: Where to place the optional "standard" externs file.
         """,
     },
 )
