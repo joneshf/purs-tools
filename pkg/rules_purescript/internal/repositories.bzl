@@ -49,7 +49,14 @@ def _purescript_download(ctx):
             ),
         )
 
-def _purescript_download_binary(ctx, purs_sha256, purs_url, purs_compile_module_sha256, purs_compile_module_url, exec_compatible_with, target_compatible_with):
+def _purescript_download_binary(
+        ctx,
+        purs_sha256,
+        purs_url,
+        purs_compile_module_sha256,
+        purs_compile_module_url,
+        exec_compatible_with,
+        target_compatible_with):
     """
     Downloads PureScript binaries for a given platform and installs a build file.
 

@@ -2,7 +2,12 @@
 Common functions for creating actions to build PureScript programs.
 """
 
-def purs_bundle(ctx, main_module, out, index_jss, foreign_jss = None):
+def purs_bundle(
+        ctx,
+        main_module,
+        out,
+        index_jss,
+        foreign_jss = None):
     """
     Bundles a pre-compiled PureScript module.
 
@@ -57,7 +62,16 @@ def purs_bundle(ctx, main_module, out, index_jss, foreign_jss = None):
         use_default_shell_env = True,
     )
 
-def purs_compile_module(ctx, module_name, src, index_js, externs_files = None, ffi = None, foreign_js = None, ignore_warnings = False, signature_externs = None):
+def purs_compile_module(
+        ctx,
+        module_name,
+        src,
+        index_js,
+        externs_files = None,
+        ffi = None,
+        foreign_js = None,
+        ignore_warnings = False,
+        signature_externs = None):
     """
     Compiles a single PureScript module from source.
 

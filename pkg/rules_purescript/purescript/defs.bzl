@@ -21,7 +21,14 @@ load(
     _purescript_toolchain = "purescript_toolchain",
 )
 
-def purescript_binary(name, src, module, deps = None, ffi = None, ignore_warnings = False, **kwargs):
+def purescript_binary(
+        name,
+        src,
+        module,
+        deps = None,
+        ffi = None,
+        ignore_warnings = False,
+        **kwargs):
     """
     Builds an executable program from PureScript source code.
 
@@ -56,7 +63,16 @@ def purescript_binary(name, src, module, deps = None, ffi = None, ignore_warning
 
 purescript_library = _purescript_library
 
-def purescript_test(name, src, module, args = None, data = None, deps = None, ignore_warnings = False, ffi = None, **kwargs):
+def purescript_test(
+        name,
+        src,
+        module,
+        args = None,
+        data = None,
+        deps = None,
+        ignore_warnings = False,
+        ffi = None,
+        **kwargs):
     """
     Builds a test from PureScript source code.
 
