@@ -12,6 +12,7 @@ haskell_library(
     srcs = [
         "CompileModule.hs",
         "Error.hs",
+        "SignatureExternsFile.hs",
         "Version.hs",
     ],
     compiler_flags = [
