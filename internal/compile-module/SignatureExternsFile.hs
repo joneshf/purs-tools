@@ -11,7 +11,9 @@ import qualified "purescript" Language.PureScript.AST.SourcePos
 import qualified "purescript" Language.PureScript.Environment
 import qualified "purescript" Language.PureScript.Externs
 import qualified "purescript" Language.PureScript.Make.Monad
+import qualified "purescript" Language.PureScript.Names
 import "rio" RIO hiding (error)
+import qualified "rio" RIO.Set
 
 codegen ::
   Language.PureScript.Externs.ExternsFile ->
@@ -21,6 +23,30 @@ codegen externsFile' outputExternsFile = do
   let externsFile :: Language.PureScript.Externs.ExternsFile
       externsFile = makeSignatureExternsFile externsFile'
   Language.PureScript.Make.Monad.writeCborFile outputExternsFile externsFile
+
+-- | We find any modules that are being re-exported.
+-- | We have to make sure we find both the module where something is actually declared and the module we imported to get the declaration.
+-- | These two can be different in the case that we're re-exporting something that's already been re-exported.
+findRexport ::
+  Language.PureScript.AST.Declarations.DeclarationRef ->
+  Set Language.PureScript.Names.ModuleName
+findRexport declarationRef = case declarationRef of
+  Language.PureScript.AST.Declarations.KindRef {} -> RIO.Set.empty
+  Language.PureScript.AST.Declarations.ModuleRef {} -> RIO.Set.empty
+  Language.PureScript.AST.Declarations.ReExportRef _ exportSource _ ->
+    RIO.Set.singleton (Language.PureScript.AST.Declarations.exportSourceDefinedIn exportSource)
+      <> foldMap RIO.Set.singleton (Language.PureScript.AST.Declarations.exportSourceImportedFrom exportSource)
+  Language.PureScript.AST.Declarations.TypeClassRef {} -> RIO.Set.empty
+  Language.PureScript.AST.Declarations.TypeInstanceRef {} -> RIO.Set.empty
+  Language.PureScript.AST.Declarations.TypeOpRef {} -> RIO.Set.empty
+  Language.PureScript.AST.Declarations.TypeRef {} -> RIO.Set.empty
+  Language.PureScript.AST.Declarations.ValueOpRef {} -> RIO.Set.empty
+  Language.PureScript.AST.Declarations.ValueRef {} -> RIO.Set.empty
+
+findRexports ::
+  [Language.PureScript.AST.Declarations.DeclarationRef] ->
+  Set Language.PureScript.Names.ModuleName
+findRexports = foldMap findRexport
 
 makeSignatureDeclarationRef ::
   Language.PureScript.AST.Declarations.DeclarationRef ->
@@ -98,21 +124,26 @@ makeSignatureExternsFile externsFile = case externsFile of
       version'
       moduleName
       (fmap makeSignatureDeclarationRef exports)
-      (fmap makeSignatureExternsImport imports)
+      (mapMaybe (makeSignatureExternsImport (findRexports exports)) imports)
       fixities
       typeFixities
       (fmap makeSignatureExternsDeclaration declarations)
       Language.PureScript.AST.SourcePos.nullSourceSpan
 
 makeSignatureExternsImport ::
+  Set Language.PureScript.Names.ModuleName ->
   Language.PureScript.Externs.ExternsImport ->
-  Language.PureScript.Externs.ExternsImport
-makeSignatureExternsImport externsImport = case externsImport of
-  Language.PureScript.Externs.ExternsImport moduleName importDeclarationType importedAs ->
-    Language.PureScript.Externs.ExternsImport
-      moduleName
-      (makeSignatureImportDeclarationType importDeclarationType)
-      importedAs
+  Maybe Language.PureScript.Externs.ExternsImport
+makeSignatureExternsImport rexports externsImport = case externsImport of
+  Language.PureScript.Externs.ExternsImport moduleName importDeclarationType importedAs
+    | RIO.Set.notMember moduleName rexports -> Nothing
+    | otherwise ->
+      Just
+        ( Language.PureScript.Externs.ExternsImport
+            moduleName
+            (makeSignatureImportDeclarationType importDeclarationType)
+            importedAs
+        )
 
 makeSignatureImportDeclarationType ::
   Language.PureScript.AST.Declarations.ImportDeclarationType ->

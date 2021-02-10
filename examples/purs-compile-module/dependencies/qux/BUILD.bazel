@@ -30,7 +30,6 @@ genrule(
     srcs = [
         "//examples/purs-compile-module/dependencies/bar",
         "//examples/purs-compile-module/dependencies/baz",
-        "//examples/purs-compile-module/dependencies/foo",
         "Qux.purs",
     ],
     outs = [
@@ -41,7 +40,6 @@ genrule(
             "$(execpath //cmd/purs-compile-module)",
             "--input-externs-file $(execpath //examples/purs-compile-module/dependencies/bar)",
             "--input-externs-file $(execpath //examples/purs-compile-module/dependencies/baz)",
-            "--input-externs-file $(execpath //examples/purs-compile-module/dependencies/foo)",
             "--output-signature-externs-file $@",
             "--purs-file $(execpath Qux.purs)",
         ],
