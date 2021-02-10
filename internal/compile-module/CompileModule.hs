@@ -15,16 +15,15 @@ where
 
 import qualified "mtl" Control.Monad.Error.Class
 import qualified "purescript" Control.Monad.Supply
+import qualified "this" CoreFn
 import qualified "containers" Data.Map
 import qualified "this" Error
 import qualified "this" ExternsFile
-import qualified "purescript" Language.PureScript
 import qualified "purescript" Language.PureScript.CST
 import qualified "purescript" Language.PureScript.CodeGen.JS
 import qualified "purescript" Language.PureScript.CodeGen.JS.Printer
 import qualified "purescript" Language.PureScript.CoreFn.Ann
 import qualified "purescript" Language.PureScript.CoreFn.Module
-import qualified "purescript" Language.PureScript.CoreFn.ToJSON
 import qualified "purescript" Language.PureScript.CoreImp.AST
 import qualified "purescript" Language.PureScript.Docs.Types
 import qualified "purescript" Language.PureScript.Errors
@@ -39,23 +38,6 @@ import qualified "optparse-applicative" Options.Applicative
 import "rio" RIO hiding (error)
 import qualified "rio" RIO.FilePath
 import qualified "rio" RIO.Time
-
--- |
--- The data for compiling CoreFn files.
-newtype CoreFnFiles = CoreFnFiles
-  { -- |
-    -- The output CoreFn file we expect to generate.
-    outputCoreFnFile :: FilePath
-  }
-
-instance Display CoreFnFiles where
-  display :: CoreFnFiles -> Utf8Builder
-  display coreFn = case coreFn of
-    CoreFnFiles {outputCoreFnFile} ->
-      "CoreFnFiles { "
-        <> "outputCoreFnFile = "
-        <> displayShow outputCoreFnFile
-        <> " }"
 
 -- |
 -- The data for compiling FFI files.
@@ -112,7 +94,7 @@ instance Display JavaScriptFiles where
 data Mode = Mode
   { -- |
     -- Any CoreFn files we deal with.
-    coreFnFiles :: Maybe CoreFnFiles,
+    coreFnFiles :: Maybe CoreFn.Mode,
     -- |
     -- Any externs files we deal with.
     externsFiles :: Maybe ExternsFile.Mode,
@@ -161,21 +143,6 @@ instance Display Mode where
         <> " }"
 
 -- |
--- The actual parser for @CoreFnFiles@.
-coreFnFilesParser :: Options.Applicative.Parser CoreFnFiles
-coreFnFilesParser =
-  pure CoreFnFiles
-    <*> outputCoreFnFile
-  where
-    outputCoreFnFile :: Options.Applicative.Parser FilePath
-    outputCoreFnFile =
-      Options.Applicative.strOption
-        ( Options.Applicative.help "Where to place the compiled CoreFn file"
-            <> Options.Applicative.long "output-corefn-file"
-            <> Options.Applicative.metavar "FILE"
-        )
-
--- |
 -- The actual parser for @FFIFiles@.
 ffiFilesParser :: Options.Applicative.Parser FFIFiles
 ffiFilesParser =
@@ -220,7 +187,7 @@ javaScriptFilesParser =
 modeParser :: Options.Applicative.Parser Mode
 modeParser =
   pure Mode
-    <*> optional coreFnFilesParser
+    <*> optional CoreFn.modeParser
     <*> optional ExternsFile.modeParser
     <*> ignoreWarnings
     <*> optional javaScriptFilesParser
@@ -346,7 +313,7 @@ importRelativeTo ffi' javaScript'
 -- |
 -- Our set of @Language.PureScript.Make.Actions.MakeActions@ that work for a compiling a single module.
 makeActions ::
-  Maybe CoreFnFiles ->
+  Maybe CoreFn.Mode ->
   Maybe ExternsFile.Mode ->
   Maybe JavaScriptFiles ->
   Language.PureScript.Make.Actions.MakeActions Language.PureScript.Make.Monad.Make
@@ -369,17 +336,9 @@ makeActions coreFn' externs' javaScript' =
       Language.PureScript.Externs.ExternsFile ->
       Control.Monad.Supply.SupplyT Language.PureScript.Make.Monad.Make ()
     codegen coreFnModule _ externsFile = do
-      for_ coreFn' (codegenCoreFn coreFnModule)
+      for_ coreFn' (CoreFn.codegen coreFnModule)
       for_ externs' (ExternsFile.codegen externsFile)
       for_ javaScript' (codegenJavaScript coreFnModule)
-
-    codegenCoreFn ::
-      Language.PureScript.CoreFn.Module.Module Language.PureScript.CoreFn.Ann.Ann ->
-      CoreFnFiles ->
-      Control.Monad.Supply.SupplyT Language.PureScript.Make.Monad.Make ()
-    codegenCoreFn coreFnModule coreFn = do
-      let coreFnJSON = Language.PureScript.CoreFn.ToJSON.moduleToJSON Language.PureScript.version coreFnModule
-      lift (Language.PureScript.Make.Monad.writeJSONFile (outputCoreFnFile coreFn) coreFnJSON)
 
     codegenJavaScript ::
       Language.PureScript.CoreFn.Module.Module Language.PureScript.CoreFn.Ann.Ann ->

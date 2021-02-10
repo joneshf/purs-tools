@@ -11,6 +11,7 @@ haskell_library(
     package_name = "compile-module",
     srcs = [
         "CompileModule.hs",
+        "CoreFn.hs",
         "Error.hs",
         "ExternsFile.hs",
         "SignatureExternsFile.hs",
