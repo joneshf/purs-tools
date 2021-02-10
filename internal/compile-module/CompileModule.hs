@@ -17,8 +17,8 @@ import qualified "mtl" Control.Monad.Error.Class
 import qualified "purescript" Control.Monad.Supply
 import qualified "containers" Data.Map
 import qualified "this" Error
+import qualified "this" ExternsFile
 import qualified "purescript" Language.PureScript
-import qualified "purescript" Language.PureScript.AST.SourcePos
 import qualified "purescript" Language.PureScript.CST
 import qualified "purescript" Language.PureScript.CodeGen.JS
 import qualified "purescript" Language.PureScript.CodeGen.JS.Printer
@@ -33,14 +33,12 @@ import qualified "purescript" Language.PureScript.Make
 import qualified "purescript" Language.PureScript.Make.Actions
 import qualified "purescript" Language.PureScript.Make.Cache
 import qualified "purescript" Language.PureScript.Make.Monad
-import qualified "purescript" Language.PureScript.ModuleDependencies
 import qualified "purescript" Language.PureScript.Names
 import qualified "purescript" Language.PureScript.Options
 import qualified "optparse-applicative" Options.Applicative
 import "rio" RIO hiding (error)
 import qualified "rio" RIO.FilePath
 import qualified "rio" RIO.Time
-import qualified "this" SignatureExternsFile
 
 -- |
 -- The data for compiling CoreFn files.
@@ -57,40 +55,6 @@ instance Display CoreFnFiles where
       "CoreFnFiles { "
         <> "outputCoreFnFile = "
         <> displayShow outputCoreFnFile
-        <> " }"
-
--- |
--- The data for compiling externs files.
-data ExternsFiles = ExternsFiles
-  { -- |
-    -- The input externs files we depend on.
-    inputExternsFiles :: [FilePath],
-    -- |
-    -- The output externs file we expect to generate.
-    -- This is a "standard" externs file with valid source annotations.
-    -- A "standard" externs file should be able to be used by other PureScript tooling without issue.
-    outputStandardExternsFile :: Maybe FilePath,
-    -- |
-    -- The output externs file we expect to generate.
-    -- This is a "signature" externs file where all source annotations are "null".
-    -- Since information about the arrangement of the module is removed,
-    -- this "signature" externs file can be depended on more reliably than a "standard" externs file.
-    outputSignatureExternsFile :: Maybe FilePath
-  }
-
-instance Display ExternsFiles where
-  display :: ExternsFiles -> Utf8Builder
-  display externs = case externs of
-    ExternsFiles {inputExternsFiles, outputStandardExternsFile, outputSignatureExternsFile} ->
-      "ExternsFiles { "
-        <> "inputExternsFiles = "
-        <> displayShow inputExternsFiles
-        <> ", "
-        <> "outputStandardExternsFile = "
-        <> displayShow outputStandardExternsFile
-        <> ", "
-        <> "outputSignatureExternsFile = "
-        <> displayShow outputSignatureExternsFile
         <> " }"
 
 -- |
@@ -151,7 +115,7 @@ data Mode = Mode
     coreFnFiles :: Maybe CoreFnFiles,
     -- |
     -- Any externs files we deal with.
-    externsFiles :: Maybe ExternsFiles,
+    externsFiles :: Maybe ExternsFile.Mode,
     -- |
     -- Whether to opt-out of any warnings.
     ignoreWarnings :: Bool,
@@ -212,39 +176,6 @@ coreFnFilesParser =
         )
 
 -- |
--- The actual parser for @ExternsFiles@.
-externsFilesParser :: Options.Applicative.Parser ExternsFiles
-externsFilesParser =
-  pure ExternsFiles
-    <*> many inputExternsFile
-    <*> optional outputStandardExternsFile
-    <*> optional outputSignatureExternsFile
-  where
-    inputExternsFile :: Options.Applicative.Parser FilePath
-    inputExternsFile =
-      Options.Applicative.strOption
-        ( Options.Applicative.help "A pre-compiled externs file"
-            <> Options.Applicative.long "input-externs-file"
-            <> Options.Applicative.metavar "FILE"
-        )
-
-    outputStandardExternsFile :: Options.Applicative.Parser FilePath
-    outputStandardExternsFile =
-      Options.Applicative.strOption
-        ( Options.Applicative.help "Where to place the \"standard\" externs file. This externs file has valid source annotations"
-            <> Options.Applicative.long "output-standard-externs-file"
-            <> Options.Applicative.metavar "FILE"
-        )
-
-    outputSignatureExternsFile :: Options.Applicative.Parser FilePath
-    outputSignatureExternsFile =
-      Options.Applicative.strOption
-        ( Options.Applicative.help "Where to place the \"signature\" externs file. This externs file has \"null\" source annotations"
-            <> Options.Applicative.long "output-signature-externs-file"
-            <> Options.Applicative.metavar "FILE"
-        )
-
--- |
 -- The actual parser for @FFIFiles@.
 ffiFilesParser :: Options.Applicative.Parser FFIFiles
 ffiFilesParser =
@@ -290,7 +221,7 @@ modeParser :: Options.Applicative.Parser Mode
 modeParser =
   pure Mode
     <*> optional coreFnFilesParser
-    <*> optional externsFilesParser
+    <*> optional ExternsFile.modeParser
     <*> ignoreWarnings
     <*> optional javaScriptFilesParser
     <*> pureScriptFile
@@ -325,49 +256,22 @@ modeRun ::
   Mode ->
   RIO SimpleApp (Either Error.Error Utf8Builder)
 modeRun mode = case mode of
-  Mode {coreFnFiles, externsFiles, ignoreWarnings, javaScriptFiles, pureScriptFile} -> do
+  Mode {coreFnFiles, ignoreWarnings, javaScriptFiles, pureScriptFile} -> do
     logDebugS "purs-compile-module" ("Processing compile mode: " <> display mode)
-    result <- liftIO do
-      Language.PureScript.Make.runMake Language.PureScript.Options.defaultOptions do
-        unsortedExterns <- forMaybeA (foldMap inputExternsFiles externsFiles) \inputExternsFile -> do
-          Language.PureScript.Make.Monad.readExternsFile inputExternsFile
-        externsAndGraph <- Language.PureScript.ModuleDependencies.sortModules externsModuleSignature unsortedExterns
-        let externs :: [Language.PureScript.Externs.ExternsFile]
-            externs = fst externsAndGraph
-        pureScriptFileContents <- Language.PureScript.Make.Monad.readTextFile pureScriptFile
-        pureScriptModule <- case Language.PureScript.CST.parseFromFile pureScriptFile pureScriptFileContents of
-          Left parseErrors -> Control.Monad.Error.Class.throwError (Language.PureScript.CST.toMultipleErrors pureScriptFile parseErrors)
-          Right pureScriptModule -> pure pureScriptModule
-        Language.PureScript.Make.rebuildModule (makeActions coreFnFiles externsFiles javaScriptFiles) externs pureScriptModule
-    pure (Error.fromRebuildModule ignoreWarnings result)
-
--- |
--- We have to convert to what the module signature needs for its imports so it we can sort the externs properly.
---
--- Much like with @externsModuleSignature@,
--- it seems like this is something that should happen uniformly so every command doesn't have to do it itself.
-externsImportModuleSignatureImport ::
-  Language.PureScript.Externs.ExternsImport ->
-  (Language.PureScript.Names.ModuleName, Language.PureScript.AST.SourcePos.SourceSpan)
-externsImportModuleSignatureImport externsImport =
-  ( Language.PureScript.Externs.eiModule externsImport,
-    Language.PureScript.AST.SourcePos.nullSourceSpan
-  )
-
--- |
--- We have to convert to a @Language.PureScript.ModuleDependencies.ModuleSignature@ so we can sort the externs properly.
---
--- Each of the upstream commands has to do this same conversion for sorting the externs.
--- Seems a bit error prone to force each command to do the same exact sorting.
-externsModuleSignature ::
-  Language.PureScript.Externs.ExternsFile ->
-  Language.PureScript.ModuleDependencies.ModuleSignature
-externsModuleSignature externsFile =
-  Language.PureScript.ModuleDependencies.ModuleSignature
-    { Language.PureScript.ModuleDependencies.sigSourceSpan = Language.PureScript.Externs.efSourceSpan externsFile,
-      Language.PureScript.ModuleDependencies.sigModuleName = Language.PureScript.Externs.efModuleName externsFile,
-      Language.PureScript.ModuleDependencies.sigImports = fmap externsImportModuleSignatureImport (Language.PureScript.Externs.efImports externsFile)
-    }
+    externs' <- case externsFiles mode of
+      Nothing -> pure (Right [])
+      Just externsFiles -> ExternsFile.readAll externsFiles
+    case externs' of
+      Left error -> pure (Left error)
+      Right externs -> do
+        result <- liftIO do
+          Language.PureScript.Make.runMake Language.PureScript.Options.defaultOptions do
+            pureScriptFileContents <- Language.PureScript.Make.Monad.readTextFile pureScriptFile
+            pureScriptModule <- case Language.PureScript.CST.parseFromFile pureScriptFile pureScriptFileContents of
+              Left parseErrors -> Control.Monad.Error.Class.throwError (Language.PureScript.CST.toMultipleErrors pureScriptFile parseErrors)
+              Right pureScriptModule -> pure pureScriptModule
+            Language.PureScript.Make.rebuildModule (makeActions coreFnFiles (externsFiles mode) javaScriptFiles) externs pureScriptModule
+        pure (Error.fromRebuildModule ignoreWarnings result)
 
 -- |
 -- Constructs a common.js import where the first @FilePath@ is relative to the second.
@@ -443,7 +347,7 @@ importRelativeTo ffi' javaScript'
 -- Our set of @Language.PureScript.Make.Actions.MakeActions@ that work for a compiling a single module.
 makeActions ::
   Maybe CoreFnFiles ->
-  Maybe ExternsFiles ->
+  Maybe ExternsFile.Mode ->
   Maybe JavaScriptFiles ->
   Language.PureScript.Make.Actions.MakeActions Language.PureScript.Make.Monad.Make
 makeActions coreFn' externs' javaScript' =
@@ -466,7 +370,7 @@ makeActions coreFn' externs' javaScript' =
       Control.Monad.Supply.SupplyT Language.PureScript.Make.Monad.Make ()
     codegen coreFnModule _ externsFile = do
       for_ coreFn' (codegenCoreFn coreFnModule)
-      for_ externs' (codegenExterns externsFile)
+      for_ externs' (ExternsFile.codegen externsFile)
       for_ javaScript' (codegenJavaScript coreFnModule)
 
     codegenCoreFn ::
@@ -476,16 +380,6 @@ makeActions coreFn' externs' javaScript' =
     codegenCoreFn coreFnModule coreFn = do
       let coreFnJSON = Language.PureScript.CoreFn.ToJSON.moduleToJSON Language.PureScript.version coreFnModule
       lift (Language.PureScript.Make.Monad.writeJSONFile (outputCoreFnFile coreFn) coreFnJSON)
-
-    codegenExterns ::
-      Language.PureScript.Externs.ExternsFile ->
-      ExternsFiles ->
-      Control.Monad.Supply.SupplyT Language.PureScript.Make.Monad.Make ()
-    codegenExterns externsFile externs = do
-      for_ (outputStandardExternsFile externs) \outputExternsFile -> do
-        lift (Language.PureScript.Make.Monad.writeCborFile outputExternsFile externsFile)
-      for_ (outputSignatureExternsFile externs) \outputExternsFile -> do
-        lift (SignatureExternsFile.codegen externsFile outputExternsFile)
 
     codegenJavaScript ::
       Language.PureScript.CoreFn.Module.Module Language.PureScript.CoreFn.Ann.Ann ->
