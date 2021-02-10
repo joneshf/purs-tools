@@ -57,6 +57,14 @@ genrule(
 # If we don't want to manage everything ourselves,
 # we can use a rule like below.
 # This is more likely how we'd actually want to interact with `bazel`.
+#
+# What's nice about using `purescript_library` is that we can list only the direct dependencies and have it work out what's actually necessary to compile.
+# The dependencies are more like what's imported in the actual PureScript module.
+# This is the real power of having language-specific rules:
+# they abstract away a lot of the complexities in the underlying tooling.
+# Another way to say that is:
+# You talk about what you want to build,
+# not how to build it.
 purescript_library(
     name = "qux_library",
     src = "Qux.purs",
@@ -67,6 +75,5 @@ purescript_library(
     deps = [
         "//examples/purs-compile-module/dependencies/bar:bar_library",
         "//examples/purs-compile-module/dependencies/baz:baz_library",
-        "//examples/purs-compile-module/dependencies/foo:foo_library",
     ],
 )
