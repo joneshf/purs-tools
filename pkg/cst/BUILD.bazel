@@ -1,0 +1,36 @@
+load(
+    "@rules_haskell//haskell:defs.bzl",
+    "haskell_library",
+    "haskell_repl",
+)
+
+haskell_library(
+    name = "cst",
+    srcs = [
+        "CST.hs",
+    ],
+    compiler_flags = [
+        "-Wall",
+        "-Wcompat",
+        "-Werror",
+        "-Wincomplete-record-updates",
+        "-Wincomplete-uni-patterns",
+        "-Wmissing-methods",
+        "-Wredundant-constraints",
+    ],
+    visibility = [
+        "//cmd:__subpackages__",
+    ],
+    deps = [
+        "@stackage//:purescript-cst",
+        "@stackage//:rio",
+    ],
+)
+
+haskell_repl(
+    name = "hie-bios",
+    collect_data = False,
+    deps = [
+        ":cst",
+    ],
+)

@@ -1,0 +1,66 @@
+load(
+    "@rules_haskell//haskell:defs.bzl",
+    "haskell_binary",
+    "haskell_repl",
+)
+load(
+    "@rules_pkg//:pkg.bzl",
+    "pkg_tar",
+)
+
+haskell_binary(
+    name = "purs-module-information",
+    srcs = [
+        "Main.hs",
+    ],
+    compiler_flags = [
+        "-O2",
+        "-Wall",
+        "-Wcompat",
+        "-Werror",
+        "-Wincomplete-record-updates",
+        "-Wincomplete-uni-patterns",
+        "-Wmissing-methods",
+        "-Wredundant-constraints",
+        "-optc=-static",
+        "-optl=-pthread",
+        "-rtsopts",
+        "-static",
+        "-threaded",
+        "-with-rtsopts=-N",
+    ] + select(
+        {
+            "//:linux": [
+                "-optl=-static",
+            ],
+            "//conditions:default": [
+            ],
+        },
+    ),
+    deps = [
+        "//pkg/cst",
+        "@stackage//:aeson",
+        "@stackage//:optparse-applicative",
+        "@stackage//:purescript-ast",
+        "@stackage//:purescript-cst",
+        "@stackage//:rio",
+    ],
+)
+
+haskell_repl(
+    name = "hie-bios",
+    collect_data = False,
+    deps = [
+        ":purs-module-information",
+    ],
+)
+
+pkg_tar(
+    name = "purs-module-information.tar.gz",
+    srcs = [
+        ":purs-module-information",
+    ],
+    extension = "tar.gz",
+    mode = "0755",
+    package_file_name = "purs-module-information.tar.gz",
+)
