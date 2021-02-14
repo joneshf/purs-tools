@@ -64,6 +64,7 @@ haskell_test(
     ],
     main_function = "ErrorTest.exit",
     deps = [
+        ":base",
         ":compile-module",
         "@stackage//:hedgehog",
         "@stackage//:purescript",
@@ -87,6 +88,7 @@ haskell_test(
     ],
     main_function = "ErrorTest.fromRebuildModule",
     deps = [
+        ":base",
         ":compile-module",
         "@stackage//:hedgehog",
         "@stackage//:purescript",

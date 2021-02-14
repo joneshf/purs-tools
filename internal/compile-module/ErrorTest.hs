@@ -18,9 +18,12 @@ import qualified "hedgehog" Hedgehog.Main
 import qualified "hedgehog" Hedgehog.Range
 import qualified "purescript" Language.PureScript.Errors
 import "rio" RIO hiding (error)
+import qualified "base" System.IO
 
 exit :: IO ()
 exit = do
+  System.IO.hSetEncoding stdout System.IO.utf8
+  System.IO.hSetEncoding stderr System.IO.utf8
   Hedgehog.Main.defaultMain
     [ Hedgehog.checkParallel $$(Hedgehog.discoverPrefix "exitProp")
     ]
@@ -38,6 +41,8 @@ exitPropOnlyExits0ForAllWarnings = Hedgehog.property do
 
 fromRebuildModule :: IO ()
 fromRebuildModule = do
+  System.IO.hSetEncoding stdout System.IO.utf8
+  System.IO.hSetEncoding stderr System.IO.utf8
   Hedgehog.Main.defaultMain
     [ Hedgehog.checkParallel $$(Hedgehog.discoverPrefix "fromRebuildModuleProp")
     ]
