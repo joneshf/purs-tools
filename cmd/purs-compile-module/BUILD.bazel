@@ -3,6 +3,10 @@ load(
     "haskell_binary",
     "haskell_repl",
 )
+load(
+    "@rules_pkg//:pkg.bzl",
+    "pkg_tar",
+)
 
 haskell_binary(
     name = "purs-compile-module",
@@ -41,4 +45,14 @@ haskell_repl(
     deps = [
         ":purs-compile-module",
     ],
+)
+
+pkg_tar(
+    name = "purs-compile-module.tar.gz",
+    srcs = [
+        ":purs-compile-module",
+    ],
+    extension = "tar.gz",
+    mode = "0755",
+    package_file_name = "purs-compile-module.tar.gz",
 )

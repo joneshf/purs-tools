@@ -80,9 +80,9 @@ jobs:
           # The desired behavior if no files are found using the provided path.
           if-no-files-found: error
           # Artifact name
-          name: purs-compile-module-${{ github.sha }}-linux
+          name: purs-compile-module-${{ github.sha }}-linux.tar.gz
           # A file, directory or wildcard pattern that describes what to upload
-          path: bazel-bin/cmd/purs-compile-module/purs-compile-module
+          path: bazel-bin/cmd/purs-compile-module/purs-compile-module.tar.gz
 
       - if: runner.os == 'macOS'
         name: Upload macOS purs-compile-module
@@ -91,6 +91,6 @@ jobs:
           # The desired behavior if no files are found using the provided path.
           if-no-files-found: error
           # Artifact name
-          name: purs-compile-module-${{ github.sha }}-macOS
+          name: purs-compile-module-${{ github.sha }}-macOS.tar.gz
           # A file, directory or wildcard pattern that describes what to upload
-          path: bazel-bin/cmd/purs-compile-module/purs-compile-module
+          path: bazel-bin/cmd/purs-compile-module/purs-compile-module.tar.gz
