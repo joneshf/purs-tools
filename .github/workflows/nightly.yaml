@@ -1,0 +1,104 @@
+name: nightly
+
+# Controls when the action will run.
+on:
+  schedule:
+    # We want to run every day at 9AM Pacific.
+    # The timezone is UTC.
+    - cron: "0 17 * * *"
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  # Figure out the last commit
+  last-commit:
+    outputs:
+      sha: ${{ steps.commit-sha.outputs.sha }}
+
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v2.3.4
+
+      - id: commit-sha
+        name: Set the last commit if it exists
+        run: echo "::set-output name=sha::$(git log --format='%H' --max-count=1 --since=@{1.day.ago})"
+
+  # Download any assets.
+  download-assets:
+    needs:
+      - last-commit
+
+    outputs:
+      datetime: ${{ steps.remove-shas.outputs.datetime }}
+      purs-compile-module-linux: ${{ steps.remove-shas.outputs.purs-compile-module-linux }}
+      purs-compile-module-macOS: ${{ steps.remove-shas.outputs.purs-compile-module-macOS }}
+      purs-module-information-linux: ${{ steps.remove-shas.outputs.purs-module-information-linux }}
+      purs-module-information-macOS: ${{ steps.remove-shas.outputs.purs-module-information-macOS }}
+
+    runs-on: ubuntu-latest
+
+    # Only run if there's a commit that hasn't had a release yet.
+    if: ${{ needs.last-commit.outputs.sha != '' }}
+
+    steps:
+      - id: purs-compile-module-linux
+        name: Download Linux purs-compile-module
+        uses: actions/download-artifact@v2.0.8
+        with:
+          name: purs-compile-module-${{ needs.last-commit.outputs.sha }}-linux.tar.gz
+
+      - id: purs-compile-module-macOS
+        name: Download macOS purs-compile-module
+        uses: actions/download-artifact@v2.0.8
+        with:
+          name: purs-compile-module-${{ needs.last-commit.outputs.sha }}-macOS.tar.gz
+
+      - id: purs-module-information-linux
+        name: Download Linux purs-module-information
+        uses: actions/download-artifact@v2.0.8
+        with:
+          name: purs-module-information-${{ needs.last-commit.outputs.sha }}-linux.tar.gz
+
+      - id: purs-module-information-macOS
+        name: Download macOS purs-module-information
+        uses: actions/download-artifact@v2.0.8
+        with:
+          name: purs-module-information-${{ needs.last-commit.outputs.sha }}-macOS.tar.gz
+
+      - name: Remove SHA from names
+        run: |
+          readonly datetime=$(date +'%Y%m%d%H%M%S')
+
+          mv purs-compile-module-${{ needs.last-commit.outputs.sha }}-linux.tar.gz "purs-compile-module-${datetime}-linux.tar.gz"
+          mv purs-compile-module-${{ needs.last-commit.outputs.sha }}-macOS.tar.gz "purs-compile-module-${datetime}-macOS.tar.gz"
+
+          echo "::set-output name=purs-compile-module-linux::purs-compile-module-${datetime}-linux.tar.gz"
+          echo "::set-output name=purs-compile-module-macOS::purs-compile-module-${datetime}-macOS.tar.gz"
+
+          mv purs-module-information-${{ needs.last-commit.outputs.sha }}-linux.tar.gz "purs-module-information-${datetime}-linux.tar.gz"
+          mv purs-module-information-${{ needs.last-commit.outputs.sha }}-macOS.tar.gz "purs-module-information-${datetime}-macOS.tar.gz"
+
+          echo "::set-output name=purs-module-information-linux::purs-module-information-${datetime}-linux.tar.gz"
+          echo "::set-output name=purs-module-information-macOS::purs-module-information-${datetime}-macOS.tar.gz"
+
+  # Create a "nightly" release.
+  nightly:
+    needs:
+      - download-assets
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        name: Create nightly release
+        uses: softprops/action-gh-release@v0.1.5
+        with:
+          files: |
+            ${{ needs.download-assets.outputs.purs-compile-module-linux }}
+            ${{ needs.download-assets.outputs.purs-compile-module-macOS }}
+            ${{ needs.download-assets.outputs.purs-module-information-linux }}
+            ${{ needs.download-assets.outputs.purs-module-information-macOS }}
