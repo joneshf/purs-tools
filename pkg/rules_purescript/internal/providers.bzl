@@ -47,7 +47,7 @@ Args:
     module_name: The PureScript module name.
     src: The PureScript source file to be compiled.
     index_js: Where to place the compiled JavaScript file
-    externs_files: The externs file dependencies for this PureScript module.
+    deps: The direct dependencies for this PureScript module.
     ignore_warnings: Opt-out of warnings causing a failure.
     ffi: An optional PureScript FFI file.
         If this is supplied,

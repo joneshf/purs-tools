@@ -2,6 +2,11 @@
 Common functions for creating actions to build PureScript programs.
 """
 
+load(
+    "//internal:providers.bzl",
+    "PureScriptModuleInfo",
+)
+
 def purs_bundle(
         ctx,
         main_module,
@@ -67,7 +72,7 @@ def purs_compile_module(
         module_name,
         src,
         index_js,
-        externs_files = None,
+        deps = None,
         ffi = None,
         foreign_js = None,
         ignore_warnings = False,
@@ -81,7 +86,7 @@ def purs_compile_module(
         module_name: The PureScript module name.
         src: The PureScript source file to be compiled.
         index_js: Where to place the compiled JavaScript file
-        externs_files: The externs file dependencies for this PureScript module.
+        deps: The direct dependencies for this PureScript module.
         ffi: An optional PureScript FFI file.
             If this is supplied,
             foreign_js must also be supplied.
@@ -95,8 +100,19 @@ def purs_compile_module(
 
     purs = ctx.toolchains["@joneshf_rules_purescript//purescript:toolchain_type"]
 
-    if externs_files == None:
-        externs_files = []
+    externs_files = []
+    if deps != None:
+        # Since PureScript doesn't know how to work only with direct dependencies,
+        # we have to flatten the depset to find all transitive dependencies.
+        # This is likely to end up being O(n^2) for each purescript_library: https://docs.bazel.build/versions/master/skylark/performance.html#avoid-calling-depsetto_list.
+        # The solution here is to use a compiler that understands how to work with direct dependencies only.
+        # This is not a problem for bazel-related stuff to solve.
+        dependencies = depset(
+            direct = [dep[PureScriptModuleInfo].info for dep in deps],
+            transitive = [dep[PureScriptModuleInfo].deps for dep in deps],
+        )
+        for dependency in dependencies.to_list():
+            externs_files.append(dependency.signature_externs)
 
     if ffi != None and foreign_js == None:
         fail("Must either provide both `ffi` and `foreign_js` or neither")

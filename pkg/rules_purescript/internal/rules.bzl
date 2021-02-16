@@ -21,22 +21,15 @@ def _purescript_binary(ctx):
         prefix = ctx.label.name,
     )
 
-    externs_files = []
     foreign_jss = []
     index_jss = []
 
-    # Since PureScript doesn't know how to work only with immediate dependencies,
-    # we have to flatten the depset to find all transitive dependencies.
-    # This is likely to end up being O(n^2) for each purescript_binary: https://docs.bazel.build/versions/master/skylark/performance.html#avoid-calling-depsetto_list.
-    # The solution here is to use a compiler that understands how to work with direct dependencies only.
-    # This is not a problem for bazel-related stuff to solve.
+    # Collect the transitive dependencies in one directory for bundling.
     dependencies = depset(
         direct = [dep[PureScriptModuleInfo].info for dep in ctx.attr.deps],
         transitive = [dep[PureScriptModuleInfo].deps for dep in ctx.attr.deps],
     )
     for dependency in dependencies.to_list():
-        externs_files.append(dependency.signature_externs)
-
         dependency_index_js = ctx.actions.declare_file(
             "{prefix}/{module}/index.js".format(
                 module = dependency.module_name,
@@ -82,7 +75,7 @@ def _purescript_binary(ctx):
 
     purs.compile_module(
         ctx,
-        externs_files = externs_files,
+        deps = ctx.attr.deps,
         ffi = ctx.file.ffi,
         foreign_js = foreign_js,
         ignore_warnings = ctx.attr.ignore_warnings,
@@ -168,20 +161,7 @@ def _purescript_library(ctx):
 
     purs = ctx.toolchains["@joneshf_rules_purescript//purescript:toolchain_type"]
 
-    externs_files = []
     outputs = []
-
-    # Since PureScript doesn't know how to work only with direct dependencies,
-    # we have to flatten the depset to find all transitive dependencies.
-    # This is likely to end up being O(n^2) for each purescript_library: https://docs.bazel.build/versions/master/skylark/performance.html#avoid-calling-depsetto_list.
-    # The solution here is to use a compiler that understands how to work with direct dependencies only.
-    # This is not a problem for bazel-related stuff to solve.
-    dependencies = depset(
-        direct = [dep[PureScriptModuleInfo].info for dep in ctx.attr.deps],
-        transitive = [dep[PureScriptModuleInfo].deps for dep in ctx.attr.deps],
-    )
-    for dependency in dependencies.to_list():
-        externs_files.append(dependency.signature_externs)
 
     foreign_js = None
     if ctx.file.ffi != None:
@@ -215,7 +195,7 @@ def _purescript_library(ctx):
 
     purs.compile_module(
         ctx,
-        externs_files = externs_files,
+        deps = ctx.attr.deps,
         ffi = ctx.file.ffi,
         foreign_js = foreign_js,
         ignore_warnings = ctx.attr.ignore_warnings,
