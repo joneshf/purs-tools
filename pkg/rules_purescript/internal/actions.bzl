@@ -100,8 +100,6 @@ def purs_compile_module(
 
     purs = ctx.toolchains["@joneshf_rules_purescript//purescript:toolchain_type"]
 
-    externs_files = []
-
     if ffi != None and foreign_js == None:
         fail("Must either provide both `ffi` and `foreign_js` or neither")
     if ffi == None and foreign_js != None:
@@ -129,11 +127,8 @@ def purs_compile_module(
             transitive = [dep[PureScriptModuleInfo].deps for dep in deps],
         )
         for dependency in dependencies.to_list():
-            externs_files.append(dependency.signature_externs)
-
-    for externs_file in externs_files:
-        arguments.add("--input-externs-file", externs_file.path)
-        inputs.append(externs_file)
+            arguments.add("--input-externs-file", dependency.signature_externs.path)
+            inputs.append(dependency.signature_externs)
 
     if ffi != None and foreign_js != None:
         arguments.add("--input-ffi-file", ffi.path)
