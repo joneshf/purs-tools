@@ -21,6 +21,33 @@ def _purescript_binary(ctx):
         prefix = ctx.label.name,
     )
 
+    foreign_js = None
+    if ctx.file.ffi != None:
+        foreign_js = ctx.actions.declare_file(
+            "{prefix}/{module}/foreign.js".format(
+                module = ctx.attr.module,
+                prefix = prefix,
+            ),
+        )
+
+    index_js = ctx.actions.declare_file(
+        "{prefix}/{module}/index.js".format(
+            module = ctx.attr.module,
+            prefix = prefix,
+        ),
+    )
+
+    purs.compile_module(
+        ctx,
+        deps = ctx.attr.deps,
+        ffi = ctx.file.ffi,
+        foreign_js = foreign_js,
+        ignore_warnings = ctx.attr.ignore_warnings,
+        index_js = index_js,
+        module_name = ctx.attr.module,
+        src = ctx.file.src,
+    )
+
     foreign_jss = []
     index_jss = []
 
@@ -55,34 +82,10 @@ def _purescript_binary(ctx):
             )
             foreign_jss.append(dependency_foreign_js)
 
-    foreign_js = None
     if ctx.file.ffi != None:
-        foreign_js = ctx.actions.declare_file(
-            "{prefix}/{module}/foreign.js".format(
-                module = ctx.attr.module,
-                prefix = prefix,
-            ),
-        )
         foreign_jss.append(foreign_js)
 
-    index_js = ctx.actions.declare_file(
-        "{prefix}/{module}/index.js".format(
-            module = ctx.attr.module,
-            prefix = prefix,
-        ),
-    )
     index_jss.append(index_js)
-
-    purs.compile_module(
-        ctx,
-        deps = ctx.attr.deps,
-        ffi = ctx.file.ffi,
-        foreign_js = foreign_js,
-        ignore_warnings = ctx.attr.ignore_warnings,
-        index_js = index_js,
-        module_name = ctx.attr.module,
-        src = ctx.file.src,
-    )
 
     executable = ctx.actions.declare_file(
         "{prefix}/{name}.js".format(
