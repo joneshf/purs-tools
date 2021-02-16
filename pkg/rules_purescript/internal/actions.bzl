@@ -44,9 +44,6 @@ def purs_bundle(
     arguments.add("--module", main_module)
     arguments.add("--output", out.path)
 
-    index_jss = []
-    foreign_jss = []
-
     # Collect the transitive dependencies in one directory for bundling.
     if deps != None:
         dependencies = depset(
@@ -64,7 +61,8 @@ def purs_bundle(
                 output = dependency_index_js,
                 target_file = dependency.javascript_file,
             )
-            index_jss.append(dependency_index_js)
+            arguments.add(dependency_index_js.path)
+            inputs.append(dependency_index_js)
 
             if dependency.ffi_file != None:
                 dependency_foreign_js = ctx.actions.declare_file(
@@ -77,18 +75,13 @@ def purs_bundle(
                     output = dependency_foreign_js,
                     target_file = dependency.ffi_file,
                 )
-                foreign_jss.append(dependency_foreign_js)
+                arguments.add(dependency_foreign_js.path)
+                inputs.append(dependency_foreign_js)
 
-    index_jss.append(index_js)
+    arguments.add(index_js.path)
+    inputs.append(index_js)
 
     if foreign_js != None:
-        foreign_jss.append(foreign_js)
-
-    for index_js in index_jss:
-        arguments.add(index_js.path)
-        inputs.append(index_js)
-
-    for foreign_js in foreign_jss:
         arguments.add(foreign_js.path)
         inputs.append(foreign_js)
 
