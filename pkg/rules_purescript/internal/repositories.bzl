@@ -14,6 +14,12 @@ _purs_compile_module_linux_url = "https://bintray.com/api/ui/download/joneshf/ge
 _purs_compile_module_macos_sha256 = "665333dd29c69ad400f5382f1399ffa643f94d7d8ba818ba53ba7c7ae0d2de98"
 _purs_compile_module_macos_url = "https://bintray.com/api/ui/download/joneshf/generic/purs-compile-module-1.0.0-rc2-macos.tar.gz"
 
+_purs_module_information_linux_sha256 = "7f2d36595908d8b976c7db9f1a872d5bec627e3a929421039e3cd5e576435094"
+_purs_module_information_linux_url = "https://github.com/joneshf/purs-tools/releases/download/nightly-2021-02-16-02-55-07/purs-module-information-nightly-2021-02-16-02-55-07-linux.tar.gz"
+
+_purs_module_information_macos_sha256 = "5c4f64a958b92e37ce7b7d78b26252c45f5e3737ffd95e0b04a410f8e924ee33"
+_purs_module_information_macos_url = "https://github.com/joneshf/purs-tools/releases/download/nightly-2021-02-16-02-55-07/purs-module-information-nightly-2021-02-16-02-55-07-macOS.tar.gz"
+
 def _purescript_download(ctx):
     """
     Downloads PureScript binaries and installs a build file.
@@ -29,6 +35,8 @@ def _purescript_download(ctx):
             purs_url = _purs_linux_url,
             purs_compile_module_sha256 = _purs_compile_module_linux_sha256,
             purs_compile_module_url = _purs_compile_module_linux_url,
+            purs_module_information_sha256 = _purs_module_information_linux_sha256,
+            purs_module_information_url = _purs_module_information_linux_url,
             exec_compatible_with = "@platforms//os:linux",
             target_compatible_with = "@platforms//os:linux",
         )
@@ -39,6 +47,8 @@ def _purescript_download(ctx):
             purs_url = _purs_macos_url,
             purs_compile_module_sha256 = _purs_compile_module_macos_sha256,
             purs_compile_module_url = _purs_compile_module_macos_url,
+            purs_module_information_sha256 = _purs_module_information_macos_sha256,
+            purs_module_information_url = _purs_module_information_macos_url,
             exec_compatible_with = "@platforms//os:macos",
             target_compatible_with = "@platforms//os:macos",
         )
@@ -55,6 +65,8 @@ def _purescript_download_binary(
         purs_url,
         purs_compile_module_sha256,
         purs_compile_module_url,
+        purs_module_information_sha256,
+        purs_module_information_url,
         exec_compatible_with,
         target_compatible_with):
     """
@@ -66,6 +78,8 @@ def _purescript_download_binary(
         purs_url: URL for the Purs tarball.
         purs_compile_module_sha256: SHA256 for purs-compile-module tarball.
         purs_compile_module_url: URL for the purs-compile-module tarball.
+        purs_module_information_sha256: SHA256 for purs-module-information tarball.
+        purs_module_information_url: URL for the purs-module-information tarball.
         exec_compatible_with: A constraint value that must be satisfied by an execution platform.
         target_compatible_with: A constraint value that must be satisfied by the target platform.
     """
@@ -82,6 +96,12 @@ def _purescript_download_binary(
         sha256 = purs_compile_module_sha256,
         stripPrefix = "bin",
         url = purs_compile_module_url,
+    )
+
+    ctx.report_progress("Downloading purs-module-information binary")
+    ctx.download_and_extract(
+        sha256 = purs_module_information_sha256,
+        url = purs_module_information_url,
     )
 
     substitutions = {

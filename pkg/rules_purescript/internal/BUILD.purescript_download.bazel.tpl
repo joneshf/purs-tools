@@ -7,6 +7,7 @@ filegroup(
     name = "tools",
     srcs = [
         "purs-compile-module",
+        "purs-module-information",
         "purs",
     ],
     visibility = [
