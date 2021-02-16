@@ -305,7 +305,8 @@ func bowerSource(filename string) bool {
 }
 
 func (p *pureScript) generatePureScriptRules(args language.GenerateArgs, pureScriptFilename string, isDependency bool, result *language.GenerateResult) {
-	file, err := os.Open(filepath.Join(args.Dir, pureScriptFilename))
+	absoluteFilename := filepath.Join(args.Dir, pureScriptFilename)
+	file, err := os.Open(absoluteFilename)
 	if err != nil {
 		log.Print(err)
 		return
@@ -336,7 +337,8 @@ func (p *pureScript) generatePureScriptRules(args language.GenerateArgs, pureScr
 
 	basename := strings.TrimSuffix(pureScriptFilename, ".purs")
 	ffiFilename := fmt.Sprintf("%s.js", basename)
-	_, err = os.Stat(filepath.Join(args.Dir, ffiFilename))
+	absoluteFFIFilename := filepath.Join(args.Dir, ffiFilename)
+	_, err = os.Stat(absoluteFFIFilename)
 	if !os.IsNotExist(err) {
 		r.SetAttr("ffi", ffiFilename)
 	}
