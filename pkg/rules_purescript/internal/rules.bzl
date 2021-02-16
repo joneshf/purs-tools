@@ -48,45 +48,6 @@ def _purescript_binary(ctx):
         src = ctx.file.src,
     )
 
-    foreign_jss = []
-    index_jss = []
-
-    # Collect the transitive dependencies in one directory for bundling.
-    dependencies = depset(
-        direct = [dep[PureScriptModuleInfo].info for dep in ctx.attr.deps],
-        transitive = [dep[PureScriptModuleInfo].deps for dep in ctx.attr.deps],
-    )
-    for dependency in dependencies.to_list():
-        dependency_index_js = ctx.actions.declare_file(
-            "{prefix}/{module}/index.js".format(
-                module = dependency.module_name,
-                prefix = prefix,
-            ),
-        )
-        ctx.actions.symlink(
-            output = dependency_index_js,
-            target_file = dependency.javascript_file,
-        )
-        index_jss.append(dependency_index_js)
-
-        if dependency.ffi_file != None:
-            dependency_foreign_js = ctx.actions.declare_file(
-                "{prefix}/{module}/foreign.js".format(
-                    module = dependency.module_name,
-                    prefix = prefix,
-                ),
-            )
-            ctx.actions.symlink(
-                output = dependency_foreign_js,
-                target_file = dependency.ffi_file,
-            )
-            foreign_jss.append(dependency_foreign_js)
-
-    if ctx.file.ffi != None:
-        foreign_jss.append(foreign_js)
-
-    index_jss.append(index_js)
-
     executable = ctx.actions.declare_file(
         "{prefix}/{name}.js".format(
             name = ctx.label.name,
@@ -95,10 +56,12 @@ def _purescript_binary(ctx):
     )
     purs.bundle(
         ctx,
-        foreign_jss = foreign_jss,
-        index_jss = index_jss,
+        deps = ctx.attr.deps,
+        foreign_js = foreign_js,
+        index_js = index_js,
         main_module = ctx.attr.module,
         out = executable,
+        prefix = prefix,
     )
 
     return [

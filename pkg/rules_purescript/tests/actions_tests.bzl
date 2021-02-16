@@ -28,10 +28,9 @@ def _purs_bundle_works_with_only_purescript_implementation_test(ctx):
     purs_bundle_action = find_action(env, actions, "PursBundle")
 
     inputs = [input.basename for input in purs_bundle_action.inputs.to_list()]
-    asserts.equals(env, 3, len(inputs))
+    asserts.equals(env, 2, len(inputs))
     contains(env, inputs, "purs", "Expected purs to be an input")
-    contains(env, inputs, "purescript-only-1.index.js", "Expected purescript-only-1.index.js to be an input")
-    contains(env, inputs, "purescript-only-2.index.js", "Expected purescript-only-2.index.js to be an input")
+    contains(env, inputs, "purescript-only.index.js", "Expected purescript-only.index.js to be an input")
 
     outputs = [output.basename for output in purs_bundle_action.outputs.to_list()]
     asserts.equals(env, 1, len(outputs))
@@ -45,17 +44,14 @@ def _purs_bundle_works_with_only_purescript_implementation_test(ctx):
     return analysistest.end(env)
 
 def _purs_bundle_works_with_only_purescript_fake_implementation_rule(ctx):
-    index_1_js = ctx.actions.declare_file("purescript-only-1.index.js")
-    index_2_js = ctx.actions.declare_file("purescript-only-2.index.js")
+    index_js = ctx.actions.declare_file("purescript-only.index.js")
     output_js = ctx.actions.declare_file("purescript-only.js")
     purs_bundle(
         ctx,
-        index_jss = [
-            index_1_js,
-            index_2_js,
-        ],
+        index_js = index_js,
         main_module = "PureScriptOnly",
         out = output_js,
+        prefix = "purescript-only",
     )
 
 _purs_bundle_works_with_only_purescript_fake_rule = rule(
@@ -80,12 +76,10 @@ def _purs_bundle_works_with_purescript_and_ffi_implementation_test(ctx):
     purs_bundle_action = find_action(env, actions, "PursBundle")
 
     inputs = [input.basename for input in purs_bundle_action.inputs.to_list()]
-    asserts.equals(env, 5, len(inputs))
+    asserts.equals(env, 3, len(inputs))
     contains(env, inputs, "purs", "Expected purs to be an input")
-    contains(env, inputs, "purescript-and-ffi-1.foreign.js", "Expected purescript-and-ffi-1.foreign.js to be an input")
-    contains(env, inputs, "purescript-and-ffi-2.foreign.js", "Expected purescript-and-ffi-2.foreign.js to be an input")
-    contains(env, inputs, "purescript-and-ffi-1.index.js", "Expected purescript-and-ffi-1.index.js to be an input")
-    contains(env, inputs, "purescript-and-ffi-2.index.js", "Expected purescript-and-ffi-2.index.js to be an input")
+    contains(env, inputs, "purescript-and-ffi.foreign.js", "Expected purescript-and-ffi.foreign.js to be an input")
+    contains(env, inputs, "purescript-and-ffi.index.js", "Expected purescript-and-ffi.index.js to be an input")
 
     outputs = [output.basename for output in purs_bundle_action.outputs.to_list()]
     asserts.equals(env, 1, len(outputs))
@@ -99,23 +93,16 @@ def _purs_bundle_works_with_purescript_and_ffi_implementation_test(ctx):
     return analysistest.end(env)
 
 def _purs_bundle_works_with_purescript_and_ffi_fake_implementation_rule(ctx):
-    foreign_1_js = ctx.actions.declare_file("purescript-and-ffi-1.foreign.js")
-    foreign_2_js = ctx.actions.declare_file("purescript-and-ffi-2.foreign.js")
-    index_1_js = ctx.actions.declare_file("purescript-and-ffi-1.index.js")
-    index_2_js = ctx.actions.declare_file("purescript-and-ffi-2.index.js")
+    foreign_js = ctx.actions.declare_file("purescript-and-ffi.foreign.js")
+    index_js = ctx.actions.declare_file("purescript-and-ffi.index.js")
     output_js = ctx.actions.declare_file("purescript-and-ffi.js")
     purs_bundle(
         ctx,
-        foreign_jss = [
-            foreign_1_js,
-            foreign_2_js,
-        ],
-        index_jss = [
-            index_1_js,
-            index_2_js,
-        ],
+        foreign_js = foreign_js,
+        index_js = index_js,
         main_module = "PureScriptAndFFI",
         out = output_js,
+        prefix = "purescript-and-ffi",
     )
 
 _purs_bundle_works_with_purescript_and_ffi_fake_rule = rule(

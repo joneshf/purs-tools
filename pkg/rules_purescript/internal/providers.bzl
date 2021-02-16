@@ -32,11 +32,13 @@ Args:
     ctx: Analysis context.
     main_module: The module name of the PureScript file.
     out: Where to place the bundled JavaScript file.
-    index_jss: The compiled JavaScript files.
-        Each file must be in a directory named by its module.
+    index_js: The compiled JavaScript file.
+        The file must be in a directory named by its module.
         E.g. `Foo.Bar/index.js`
-    foreign_jss: The optional FFI files.
-        Each file must be in a directory named by its module.
+    prefix: The prefix to next generated files under.
+    deps: The direct dependencies for this PureScript module.
+    foreign_js: The optional FFI files.
+        The file must be in a directory named by its module.
         E.g. `Foo.Bar/foreign.js`
         """,
         "compile_module": """

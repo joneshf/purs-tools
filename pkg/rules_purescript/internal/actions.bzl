@@ -11,8 +11,10 @@ def purs_bundle(
         ctx,
         main_module,
         out,
-        index_jss,
-        foreign_jss = None):
+        index_js,
+        prefix,
+        deps = None,
+        foreign_js = None):
     """
     Bundles a pre-compiled PureScript module.
 
@@ -20,18 +22,57 @@ def purs_bundle(
         ctx: Analysis context.
         main_module: The module name of the PureScript file.
         out: Where to place the bundled JavaScript file.
-        index_jss: The compiled JavaScript files.
-            Each file must be in a directory named by its module.
+        index_js: The compiled JavaScript file.
+            The file must be in a directory named by its module.
             E.g. `Foo.Bar/index.js`
-        foreign_jss: The optional FFI files.
-            Each file must be in a directory named by its module.
+        prefix: The prefix to next generated files under.
+        deps: The direct dependencies for this PureScript module.
+        foreign_js: The optional FFI files.
+            The file must be in a directory named by its module.
             E.g. `Foo.Bar/foreign.js`
     """
 
     purs = ctx.toolchains["@joneshf_rules_purescript//purescript:toolchain_type"]
 
-    if foreign_jss == None:
-        foreign_jss = []
+    index_jss = []
+    foreign_jss = []
+
+    # Collect the transitive dependencies in one directory for bundling.
+    if deps != None:
+        dependencies = depset(
+            direct = [dep[PureScriptModuleInfo].info for dep in deps],
+            transitive = [dep[PureScriptModuleInfo].deps for dep in deps],
+        )
+        for dependency in dependencies.to_list():
+            dependency_index_js = ctx.actions.declare_file(
+                "{prefix}/{module}/index.js".format(
+                    module = dependency.module_name,
+                    prefix = prefix,
+                ),
+            )
+            ctx.actions.symlink(
+                output = dependency_index_js,
+                target_file = dependency.javascript_file,
+            )
+            index_jss.append(dependency_index_js)
+
+            if dependency.ffi_file != None:
+                dependency_foreign_js = ctx.actions.declare_file(
+                    "{prefix}/{module}/foreign.js".format(
+                        module = dependency.module_name,
+                        prefix = prefix,
+                    ),
+                )
+                ctx.actions.symlink(
+                    output = dependency_foreign_js,
+                    target_file = dependency.ffi_file,
+                )
+                foreign_jss.append(dependency_foreign_js)
+
+    index_jss.append(index_js)
+
+    if foreign_js != None:
+        foreign_jss.append(foreign_js)
 
     inputs = []
     outputs = []
