@@ -34,6 +34,16 @@ def purs_bundle(
 
     purs = ctx.toolchains["@joneshf_rules_purescript//purescript:toolchain_type"]
 
+    inputs = []
+    outputs = []
+
+    arguments = ctx.actions.args()
+
+    arguments.add("bundle")
+    arguments.add("--main", main_module)
+    arguments.add("--module", main_module)
+    arguments.add("--output", out.path)
+
     index_jss = []
     foreign_jss = []
 
@@ -73,16 +83,6 @@ def purs_bundle(
 
     if foreign_js != None:
         foreign_jss.append(foreign_js)
-
-    inputs = []
-    outputs = []
-
-    arguments = ctx.actions.args()
-
-    arguments.add("bundle")
-    arguments.add("--main", main_module)
-    arguments.add("--module", main_module)
-    arguments.add("--output", out.path)
 
     for index_js in index_jss:
         arguments.add(index_js.path)
