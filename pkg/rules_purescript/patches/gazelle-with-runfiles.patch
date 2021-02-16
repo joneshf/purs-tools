@@ -1,0 +1,48 @@
+diff --git a/def.bzl b/def.bzl
+index e67cefd..3d1fd3d 100644
+--- a/def.bzl
++++ b/def.bzl
+@@ -74,7 +74,8 @@ def _gazelle_runner_impl(ctx):
+     runfiles = ctx.runfiles(files = [
+         ctx.executable.gazelle,
+         go_tool,
+-    ] + ctx.files.data)
++    ] + ctx.files.data + ctx.files._bash_runfile_helpers)
++    runfiles = runfiles.merge(ctx.attr.gazelle[DefaultInfo].default_runfiles)
+     return [DefaultInfo(
+         files = depset([out_file]),
+         runfiles = runfiles,
+@@ -113,6 +114,9 @@ _gazelle_runner = rule(
+             default = "@bazel_gazelle//internal:gazelle.bash.in",
+             allow_single_file = True,
+         ),
++        "_bash_runfile_helpers": attr.label(
++            default = "@bazel_tools//tools/bash/runfiles",
++        ),
+     },
+     executable = True,
+     toolchains = ["@io_bazel_rules_go//go:toolchain"],
+diff --git a/internal/gazelle.bash.in b/internal/gazelle.bash.in
+index ddc4e6b..e0d2af1 100644
+--- a/internal/gazelle.bash.in
++++ b/internal/gazelle.bash.in
+@@ -16,6 +16,19 @@
+ 
+ @@GENERATED_MESSAGE@@
+ 
++# Copy-pasted from the Bazel Bash runfiles library v2.
++set -uo pipefail; f=bazel_tools/tools/bash/runfiles/runfiles.bash
++source "${RUNFILES_DIR:-/dev/null}/$f" 2>/dev/null || \
++  source "$(grep -sm1 "^$f " "${RUNFILES_MANIFEST_FILE:-/dev/null}" | cut -f2- -d' ')" 2>/dev/null || \
++  source "$0.runfiles/$f" 2>/dev/null || \
++  source "$(grep -sm1 "^$f " "$0.runfiles_manifest" | cut -f2- -d' ')" 2>/dev/null || \
++  source "$(grep -sm1 "^$f " "$0.exe.runfiles_manifest" | cut -f2- -d' ')" 2>/dev/null || \
++  { echo>&2 "ERROR: cannot find $f"; exit 1; }; f=; set -e
++# --- end runfiles.bash initialization v2 ---
++
++# Export runfile vars so sub-processes can access them
++runfiles_export_envvars
++
+ set -euo pipefail
+ 
+ RUNNER_LABEL=@@RUNNER_LABEL@@

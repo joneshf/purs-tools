@@ -35,10 +35,16 @@ def bazel_gazelle_dependencies():
     maybe(
         http_archive,
         "bazel_gazelle",
-        sha256 = "222e49f034ca7a1d1231422cdb67066b885819885c356673cb1f72f748a3c9d4",
+        patch_args = [
+            "-p1",
+        ],
+        patches = [
+            "@joneshf_rules_purescript//patches:gazelle-with-runfiles.patch",
+        ],
+        sha256 = "9f01323bbfa0c5db8604ec65e055e1dde21c5f0fea4700f1e9f2100e83352306",
+        strip_prefix = "bazel-gazelle-e4496b956eb46bdf8c9bf95b8d1d85e3a086c4be",
         urls = [
-            "https://mirror.bazel.build/github.com/bazelbuild/bazel-gazelle/releases/download/v0.22.3/bazel-gazelle-v0.22.3.tar.gz",
-            "https://github.com/bazelbuild/bazel-gazelle/releases/download/v0.22.3/bazel-gazelle-v0.22.3.tar.gz",
+            "https://github.com/bazelbuild/bazel-gazelle/archive/e4496b956eb46bdf8c9bf95b8d1d85e3a086c4be.zip",
         ],
     )
 
