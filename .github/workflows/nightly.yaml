@@ -14,7 +14,9 @@ jobs:
   # Figure out the last commit
   last-commit:
     outputs:
+      datetime: ${{ steps.commit-sha.outputs.datetime }}
       sha: ${{ steps.commit-sha.outputs.sha }}
+      tag: ${{ steps.commit-sha.outputs.tag }}
 
     runs-on: ubuntu-latest
 
@@ -24,19 +26,27 @@ jobs:
 
       - id: commit-sha
         name: Set the last commit if it exists
-        run: echo "::set-output name=sha::$(git log --format='%H' --max-count=1 --since=@{1.day.ago})"
+        run: |
+          readonly sha=$(git log --format='%H' --max-count=1 --since=@{1.day.ago})
 
-  # Download any assets.
-  download-assets:
+          if [ -n "${sha}" ]; then
+            readonly datetime=$(date +'%Y-%m-%d %H:%M:%S')
+            readonly tag="nightly-$(date +'%Y-%m-%d-%H-%M-%S' --date="${datetime}")"
+
+            echo "::set-output name=datetime::${datetime}"
+            echo "::set-output name=sha::${sha}"
+            echo "::set-output name=tag::${tag}"
+
+            git config --global user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git config --global user.name 'github-actions[bot]'
+            git tag --annotate --message 'Nightly tag' "${tag}" "${sha}"
+            git push origin "${tag}"
+          fi
+
+  # Create a "nightly" release.
+  nightly:
     needs:
       - last-commit
-
-    outputs:
-      datetime: ${{ steps.remove-shas.outputs.datetime }}
-      purs-compile-module-linux: ${{ steps.remove-shas.outputs.purs-compile-module-linux }}
-      purs-compile-module-macOS: ${{ steps.remove-shas.outputs.purs-compile-module-macOS }}
-      purs-module-information-linux: ${{ steps.remove-shas.outputs.purs-module-information-linux }}
-      purs-module-information-macOS: ${{ steps.remove-shas.outputs.purs-module-information-macOS }}
 
     runs-on: ubuntu-latest
 
@@ -46,59 +56,56 @@ jobs:
     steps:
       - id: purs-compile-module-linux
         name: Download Linux purs-compile-module
-        uses: actions/download-artifact@v2.0.8
+        uses: dawidd6/action-download-artifact@891cccee4b25d3306cf5edafa174ddc1d969871f
         with:
+          commit: ${{ needs.last-commit.outputs.sha }}
           name: purs-compile-module-${{ needs.last-commit.outputs.sha }}-linux.tar.gz
+          path: purs-compile-module-linux
+          workflow: main.yaml
 
       - id: purs-compile-module-macOS
         name: Download macOS purs-compile-module
-        uses: actions/download-artifact@v2.0.8
+        uses: dawidd6/action-download-artifact@891cccee4b25d3306cf5edafa174ddc1d969871f
         with:
+          commit: ${{ needs.last-commit.outputs.sha }}
           name: purs-compile-module-${{ needs.last-commit.outputs.sha }}-macOS.tar.gz
+          path: purs-compile-module-macOS
+          workflow: main.yaml
 
       - id: purs-module-information-linux
         name: Download Linux purs-module-information
-        uses: actions/download-artifact@v2.0.8
+        uses: dawidd6/action-download-artifact@891cccee4b25d3306cf5edafa174ddc1d969871f
         with:
+          commit: ${{ needs.last-commit.outputs.sha }}
           name: purs-module-information-${{ needs.last-commit.outputs.sha }}-linux.tar.gz
+          path: purs-module-information-linux
+          workflow: main.yaml
 
       - id: purs-module-information-macOS
         name: Download macOS purs-module-information
-        uses: actions/download-artifact@v2.0.8
+        uses: dawidd6/action-download-artifact@891cccee4b25d3306cf5edafa174ddc1d969871f
         with:
+          commit: ${{ needs.last-commit.outputs.sha }}
           name: purs-module-information-${{ needs.last-commit.outputs.sha }}-macOS.tar.gz
+          path: purs-module-information-macOS
+          workflow: main.yaml
 
       - name: Remove SHA from names
         run: |
-          readonly datetime=$(date +'%Y%m%d%H%M%S')
+          mv purs-compile-module-linux/purs-compile-module.tar.gz "purs-compile-module-${{ needs.last-commit.outputs.tag }}-linux.tar.gz"
+          mv purs-compile-module-macOS/purs-compile-module.tar.gz "purs-compile-module-${{ needs.last-commit.outputs.tag }}-macOS.tar.gz"
 
-          mv purs-compile-module-${{ needs.last-commit.outputs.sha }}-linux.tar.gz "purs-compile-module-${datetime}-linux.tar.gz"
-          mv purs-compile-module-${{ needs.last-commit.outputs.sha }}-macOS.tar.gz "purs-compile-module-${datetime}-macOS.tar.gz"
+          mv purs-module-information-linux/purs-module-information.tar.gz "purs-module-information-${{ needs.last-commit.outputs.tag }}-linux.tar.gz"
+          mv purs-module-information-macOS/purs-module-information.tar.gz "purs-module-information-${{ needs.last-commit.outputs.tag }}-macOS.tar.gz"
 
-          echo "::set-output name=purs-compile-module-linux::purs-compile-module-${datetime}-linux.tar.gz"
-          echo "::set-output name=purs-compile-module-macOS::purs-compile-module-${datetime}-macOS.tar.gz"
-
-          mv purs-module-information-${{ needs.last-commit.outputs.sha }}-linux.tar.gz "purs-module-information-${datetime}-linux.tar.gz"
-          mv purs-module-information-${{ needs.last-commit.outputs.sha }}-macOS.tar.gz "purs-module-information-${datetime}-macOS.tar.gz"
-
-          echo "::set-output name=purs-module-information-linux::purs-module-information-${datetime}-linux.tar.gz"
-          echo "::set-output name=purs-module-information-macOS::purs-module-information-${datetime}-macOS.tar.gz"
-
-  # Create a "nightly" release.
-  nightly:
-    needs:
-      - download-assets
-
-    runs-on: ubuntu-latest
-
-    steps:
       - env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         name: Create nightly release
-        uses: softprops/action-gh-release@v0.1.5
+        uses: softprops/action-gh-release@affa18ef97bc9db20076945705aba8c516139abd
         with:
+          fail_on_unmatched_files: true
           files: |
-            ${{ needs.download-assets.outputs.purs-compile-module-linux }}
-            ${{ needs.download-assets.outputs.purs-compile-module-macOS }}
-            ${{ needs.download-assets.outputs.purs-module-information-linux }}
-            ${{ needs.download-assets.outputs.purs-module-information-macOS }}
+            purs-*.tar.gz
+          name: Nightly ${{ needs.last-commit.outputs.datetime }}
+          prerelease: true
+          tag_name: ${{ needs.last-commit.outputs.tag }}
