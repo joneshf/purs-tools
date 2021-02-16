@@ -26,8 +26,10 @@ type pureScript struct {
 }
 
 type pureScriptModule struct {
-	Module  string   `json:"moduleName"`
-	Imports []string `json:"imports"`
+	DefinesInstances bool     `json:"definesInstances"`
+	Imports          []string `json:"imports"`
+	Module           string   `json:"moduleName"`
+	ReExports        []string `json:"reExports"`
 }
 
 // RegisterFlags registers command-line flags used by the extension. This
