@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -17,10 +18,12 @@ import (
 	"github.com/bazelbuild/bazel-gazelle/repo"
 	"github.com/bazelbuild/bazel-gazelle/resolve"
 	"github.com/bazelbuild/bazel-gazelle/rule"
+	"github.com/bazelbuild/rules_go/go/tools/bazel"
 )
 
 type pureScript struct {
-	modules map[string]label.Label
+	moduleInformation func(...string) *exec.Cmd
+	modules           map[string]label.Label
 }
 
 type pureScriptModule struct {
@@ -400,7 +403,16 @@ func spagoSource(filename string) bool {
 func (p *pureScript) Fix(c *config.Config, f *rule.File) {}
 
 func NewLanguage() language.Language {
+	foundPursModuleInformation, ok := bazel.FindBinary("", "purs-module-information")
+	if !ok {
+		log.Fatalf("Could not find `purs-module-information` binary")
+	}
+	pursModuleInformation := func(args ...string) *exec.Cmd {
+		return exec.Command(foundPursModuleInformation, args...)
+	}
+
 	return &pureScript{
-		modules: make(map[string]label.Label),
+		moduleInformation: pursModuleInformation,
+		modules:           make(map[string]label.Label),
 	}
 }

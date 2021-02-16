@@ -3,9 +3,23 @@ load(
     "go_library",
 )
 
+alias(
+    name = "purs_module_information",
+    actual = select(
+        {
+            "//:linux": "@joneshf_rules_purescript_purs_linux//:purs-module-information",
+            "//:macos": "@joneshf_rules_purescript_purs_macos//:purs-module-information",
+        },
+        no_match_error = "No purs binary available for this platform",
+    ),
+)
+
 go_library(
     name = "purescript",
     srcs = ["language.go"],
+    data = [
+        ":purs_module_information",
+    ],
     importpath = "github.com/joneshf/purs-tools/pkg/rules_purescript/internal/gazelle/purescript",
     visibility = ["//visibility:public"],
     deps = [
@@ -15,5 +29,6 @@ go_library(
         "@bazel_gazelle//repo:go_default_library",
         "@bazel_gazelle//resolve:go_default_library",
         "@bazel_gazelle//rule:go_default_library",
+        "@io_bazel_rules_go//go/tools/bazel:go_default_library",
     ],
 )
