@@ -1,15 +1,14 @@
 package purescript
 
 import (
-	"bufio"
+	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"sort"
 	"strings"
 
 	"github.com/bazelbuild/bazel-gazelle/config"
@@ -27,61 +26,8 @@ type pureScript struct {
 }
 
 type pureScriptModule struct {
-	module  string
-	imports []string
-}
-
-func findImports(scanner *bufio.Scanner) []string {
-	var imports []string
-	for scanner.Scan() {
-		parsedImport, parsedImportOk := parseImport(scanner.Text())
-		if parsedImportOk {
-			imports = append(imports, parsedImport)
-		}
-	}
-	sort.Strings(imports)
-
-	return imports
-}
-
-func findModule(scanner *bufio.Scanner) (string, bool) {
-	var module string
-	var ok bool
-	for scanner.Scan() {
-		module, ok = parseModule(scanner.Text())
-		if ok {
-			break
-		}
-	}
-	return module, ok
-}
-
-func parseImport(str string) (string, bool) {
-	tokens := strings.Fields(str)
-	if len(tokens) > 1 && tokens[0] == "import" {
-		return tokens[1], true
-	}
-	return "", false
-}
-
-func parseModule(str string) (string, bool) {
-	tokens := strings.Fields(str)
-	if len(tokens) > 1 && tokens[0] == "module" {
-		return tokens[1], true
-	}
-	return "", false
-}
-
-func parsePureScriptModule(reader io.Reader) (pureScriptModule, error) {
-	scanner := bufio.NewScanner(reader)
-	parsedModule, parsedModuleOk := findModule(scanner)
-	if parsedModuleOk {
-		return pureScriptModule{
-			module:  parsedModule,
-			imports: findImports(scanner),
-		}, nil
-	}
-	return pureScriptModule{}, fmt.Errorf("Could not parse module")
+	Module  string   `json:"moduleName"`
+	Imports []string `json:"imports"`
 }
 
 // RegisterFlags registers command-line flags used by the extension. This
@@ -309,26 +255,28 @@ func bowerSource(filename string) bool {
 
 func (p *pureScript) generatePureScriptRules(args language.GenerateArgs, pureScriptFilename string, isDependency bool, result *language.GenerateResult) {
 	absoluteFilename := filepath.Join(args.Dir, pureScriptFilename)
-	file, err := os.Open(absoluteFilename)
+	cmdPursModuleInformation := p.moduleInformation(fmt.Sprintf("--purs-file=%s", absoluteFilename))
+	output, err := cmdPursModuleInformation.Output()
+	var cmdErr *exec.ExitError
+	if errors.As(err, &cmdErr) {
+		log.Println(string(cmdErr.Stderr))
+		return
+	}
+
+	var psModule pureScriptModule
+	err = json.Unmarshal(output, &psModule)
 	if err != nil {
 		log.Print(err)
 		return
 	}
-	defer file.Close()
 
-	psModule, err := parsePureScriptModule(file)
-	if err != nil {
-		log.Print(err)
-		return
-	}
+	name := bazelizePureScriptModuleName(psModule.Module)
 
-	name := bazelizePureScriptModuleName(psModule.module)
-
-	p.modules[psModule.module] = label.New(args.Config.RepoName, args.Rel, name)
+	p.modules[psModule.Module] = label.New(args.Config.RepoName, args.Rel, name)
 
 	r := rule.NewRule("purescript_library", name)
 
-	r.SetAttr("module", psModule.module)
+	r.SetAttr("module", psModule.Module)
 	r.SetAttr("src", pureScriptFilename)
 	r.SetAttr("visibility", []string{
 		"//visibility:public",
@@ -346,8 +294,8 @@ func (p *pureScript) generatePureScriptRules(args language.GenerateArgs, pureScr
 		r.SetAttr("ffi", ffiFilename)
 	}
 
-	imports := make([]string, 0, len(psModule.imports))
-	for _, import_ := range psModule.imports {
+	imports := make([]string, 0, len(psModule.Imports))
+	for _, import_ := range psModule.Imports {
 		imports = append(imports, import_)
 	}
 	result.Imports = append(result.Imports, imports)
