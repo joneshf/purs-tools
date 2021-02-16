@@ -17,6 +17,7 @@ import qualified "purescript-cst" Language.PureScript.CST.Types
 import qualified "purescript-ast" Language.PureScript.Names
 import qualified "optparse-applicative" Options.Applicative
 import "rio" RIO hiding (error)
+import qualified "rio" RIO.HashMap
 import qualified "rio" RIO.List
 
 -- |
@@ -124,7 +125,12 @@ argumentsParserInfo =
 cstModuleName ::
   Language.PureScript.CST.Types.Name Language.PureScript.Names.ModuleName ->
   Utf8Builder
-cstModuleName name = display (Language.PureScript.Names.runModuleName (Language.PureScript.CST.Types.nameValue name))
+cstModuleName name = display (cstModuleNameText name)
+
+cstModuleNameText ::
+  Language.PureScript.CST.Types.Name Language.PureScript.Names.ModuleName ->
+  Text
+cstModuleNameText name = Language.PureScript.Names.runModuleName (Language.PureScript.CST.Types.nameValue name)
 
 debug ::
   Utf8Builder ->
@@ -232,17 +238,24 @@ moduleInformation cstModule =
     { definesInstances = any isInstance (Language.PureScript.CST.Types.modDecls cstModule),
       imports = fmap importModuleName (Language.PureScript.CST.Types.modImports cstModule),
       moduleName = cstModuleName (Language.PureScript.CST.Types.modNamespace cstModule),
-      reExports = foldMap reExportModuleNames (Language.PureScript.CST.Types.modExports cstModule)
+      reExports =
+        foldMap
+          (reExportModuleNames (renamedModules (Language.PureScript.CST.Types.modImports cstModule)))
+          (Language.PureScript.CST.Types.modExports cstModule)
     }
 
 reExportModuleName ::
   forall a.
+  HashMap Text [Utf8Builder] ->
   Language.PureScript.CST.Types.Export a ->
   [Utf8Builder]
-reExportModuleName export' = case export' of
+reExportModuleName moduleNameMap export' = case export' of
   Language.PureScript.CST.Types.ExportClass {} -> []
   Language.PureScript.CST.Types.ExportKind {} -> []
-  Language.PureScript.CST.Types.ExportModule _ _ name -> [cstModuleName name]
+  Language.PureScript.CST.Types.ExportModule _ _ name ->
+    fromMaybe
+      [cstModuleName name]
+      (RIO.HashMap.lookup (cstModuleNameText name) moduleNameMap)
   Language.PureScript.CST.Types.ExportOp {} -> []
   Language.PureScript.CST.Types.ExportType {} -> []
   Language.PureScript.CST.Types.ExportTypeOp {} -> []
@@ -250,10 +263,43 @@ reExportModuleName export' = case export' of
 
 reExportModuleNames ::
   forall a.
+  HashMap Text [Utf8Builder] ->
   Language.PureScript.CST.Types.DelimitedNonEmpty (Language.PureScript.CST.Types.Export a) ->
   [Utf8Builder]
-reExportModuleNames export' = case Language.PureScript.CST.Types.wrpValue export' of
-  export -> foldMap reExportModuleName export
+reExportModuleNames moduleNameMap export' = case Language.PureScript.CST.Types.wrpValue export' of
+  export -> foldMap (reExportModuleName moduleNameMap) export
+
+renamedModules ::
+  [Language.PureScript.CST.Types.ImportDecl a] ->
+  HashMap Text [Utf8Builder]
+renamedModules = foldl' renamedModules' RIO.HashMap.empty
+
+-- |
+-- Inserts a new module name in to a potential list of other module names.
+--
+-- We have to support a list of module names since multiple imports can be combined into one module name.
+-- E.g.
+-- ```PureScript
+-- import Bar as Bar
+-- import Foo as Bar
+-- ```
+-- would translate to something like:
+-- ```Haskell
+-- RIO.HashMap.singleton "Bar" ["Bar", "Foo"]
+-- ```
+renamedModules' ::
+  HashMap Text [Utf8Builder] ->
+  Language.PureScript.CST.Types.ImportDecl a ->
+  HashMap Text [Utf8Builder]
+renamedModules' reExports importDecl = case Language.PureScript.CST.Types.impQual importDecl of
+  Just (_, name) ->
+    RIO.HashMap.insertWith
+      mappend
+      (cstModuleNameText name)
+      [ cstModuleName (Language.PureScript.CST.Types.impModule importDecl)
+      ]
+      reExports
+  Nothing -> reExports
 
 renderJSON ::
   ModuleInformation ->
