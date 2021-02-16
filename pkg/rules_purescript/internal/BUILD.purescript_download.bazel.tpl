@@ -3,6 +3,17 @@ load(
     "purescript_toolchain",
 )
 
+exports_files(
+    [
+        "purs-compile-module",
+        "purs-module-information",
+        "purs",
+    ],
+    visibility = [
+        "//visibility:public",
+    ],
+)
+
 filegroup(
     name = "tools",
     srcs = [
