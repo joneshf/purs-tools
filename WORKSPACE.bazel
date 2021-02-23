@@ -197,8 +197,10 @@ stack_snapshot(
         "aeson",
         "hedgehog",
         "optparse-applicative",
-        "rio",
+        "pretty-simple",
         "purescript",
+        "rio",
+        "serialise",
         # `purescript-ast` dependencies
         # These have to be here so the `//vendor/purescript:purescript-ast` package can pick them up.
         # If we ever can get rid of the `//vendor/purescript:purescript-ast` package,

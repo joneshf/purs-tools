@@ -85,6 +85,17 @@ jobs:
           path: bazel-bin/cmd/purs-compile-module/purs-compile-module.tar.gz
 
       - if: runner.os == 'Linux'
+        name: Upload Linux purs-externs
+        uses: actions/upload-artifact@v2.2.2
+        with:
+          # The desired behavior if no files are found using the provided path.
+          if-no-files-found: error
+          # Artifact name
+          name: purs-externs-${{ github.sha }}-linux.tar.gz
+          # A file, directory or wildcard pattern that describes what to upload
+          path: bazel-bin/cmd/purs-externs/purs-externs.tar.gz
+
+      - if: runner.os == 'Linux'
         name: Upload Linux purs-module-information
         uses: actions/upload-artifact@v2.2.2
         with:
@@ -105,6 +116,17 @@ jobs:
           name: purs-compile-module-${{ github.sha }}-macOS.tar.gz
           # A file, directory or wildcard pattern that describes what to upload
           path: bazel-bin/cmd/purs-compile-module/purs-compile-module.tar.gz
+
+      - if: runner.os == 'macOS'
+        name: Upload macOS purs-externs
+        uses: actions/upload-artifact@v2.2.2
+        with:
+          # The desired behavior if no files are found using the provided path.
+          if-no-files-found: error
+          # Artifact name
+          name: purs-externs-${{ github.sha }}-macOS.tar.gz
+          # A file, directory or wildcard pattern that describes what to upload
+          path: bazel-bin/cmd/purs-externs/purs-externs.tar.gz
 
       - if: runner.os == 'macOS'
         name: Upload macOS purs-module-information

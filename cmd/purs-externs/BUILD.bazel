@@ -1,0 +1,57 @@
+load(
+    "@rules_haskell//haskell:defs.bzl",
+    "haskell_binary",
+    "haskell_repl",
+)
+load(
+    "@rules_pkg//:pkg.bzl",
+    "pkg_tar",
+)
+
+haskell_binary(
+    name = "purs-externs",
+    srcs = [
+        "Main.hs",
+    ],
+    compiler_flags = [
+        "-O2",
+        "-Wall",
+        "-Wcompat",
+        "-Werror",
+        "-Wincomplete-record-updates",
+        "-Wincomplete-uni-patterns",
+        "-Wmissing-methods",
+        "-Wredundant-constraints",
+        "-optc=-static",
+        "-optl=-pthread",
+        "-rtsopts",
+        "-static",
+        "-threaded",
+        "-with-rtsopts=-N",
+    ],
+    deps = [
+        "//internal/compile-module:error",
+        "@stackage//:optparse-applicative",
+        "@stackage//:pretty-simple",
+        "@stackage//:purescript",
+        "@stackage//:rio",
+    ],
+)
+
+haskell_repl(
+    name = "hie-bios",
+    collect_data = False,
+    deps = [
+        ":purs-externs",
+    ],
+)
+
+pkg_tar(
+    name = "purs-externs.tar.gz",
+    srcs = [
+        ":purs-externs",
+    ],
+    extension = "tar.gz",
+    mode = "0755",
+    package_file_name = "purs-externs.tar.gz",
+)
