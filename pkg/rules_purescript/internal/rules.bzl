@@ -45,6 +45,7 @@ def _purescript_binary(ctx):
         ignore_warnings = ctx.attr.ignore_warnings,
         index_js = index_js,
         module_name = ctx.attr.module,
+        rts_options = ctx.attr.rts_options,
         src = ctx.file.src,
     )
 
@@ -62,6 +63,7 @@ def _purescript_binary(ctx):
         main_module = ctx.attr.module,
         out = executable,
         prefix = prefix,
+        rts_options = ctx.attr.rts_options,
     )
 
     return [
@@ -97,6 +99,23 @@ purescript_binary = rule(
         "module": attr.string(
             doc = "Entry point module name",
             mandatory = True,
+        ),
+        "rts_options": attr.string_list(
+            default = [
+                "-N1",
+            ],
+            doc = """
+Options to pass to GHC's RTS.
+Defaults to `-N1` (a single capability for parallelism).
+
+Use this for fine-tuning the individual compilation.
+
+Pass the options as though they would be between `+RTS` and `-RTS`.
+E.g. If you would normally say `purs compile +RTS -A1G -N4 -RTS`,
+then you'd want to say `rts_options = [ "-A1G", "-N4" ]`.
+
+For more information, see: https://downloads.haskell.org/ghc/8.6.5/docs/html/users_guide/runtime_control.html
+""",
         ),
         "src": attr.label(
             allow_single_file = [
@@ -167,6 +186,7 @@ def _purescript_library(ctx):
         ignore_warnings = ctx.attr.ignore_warnings,
         index_js = index_js,
         module_name = ctx.attr.module,
+        rts_options = ctx.attr.rts_options,
         src = ctx.file.src,
         signature_externs = signature_externs_cbor,
         standard_externs = standard_externs_cbor,
@@ -223,6 +243,23 @@ purescript_library = rule(
             providers = [
                 PureScriptModuleInfo,
             ],
+        ),
+        "rts_options": attr.string_list(
+            default = [
+                "-N1",
+            ],
+            doc = """
+Options to pass to GHC's RTS.
+Defaults to `-N1` (a single capability for parallelism).
+
+Use this for fine-tuning the individual compilation.
+
+Pass the options as though they would be between `+RTS` and `-RTS`.
+E.g. If you would normally say `purs compile +RTS -A1G -N4 -RTS`,
+then you'd want to say `rts_options = [ "-A1G", "-N4" ]`.
+
+For more information, see: https://downloads.haskell.org/ghc/8.6.5/docs/html/users_guide/runtime_control.html
+""",
         ),
         "src": attr.label(
             allow_single_file = [

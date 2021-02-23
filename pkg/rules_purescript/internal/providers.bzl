@@ -40,6 +40,8 @@ Args:
     foreign_js: The optional FFI files.
         The file must be in a directory named by its module.
         E.g. `Foo.Bar/foreign.js`
+    rts_options: Options to pass to GHC's RTS.
+        E.g. `[ "-A1G", "-N4" ]`
         """,
         "compile_module": """
 Compiles a single PureScript module from source.
@@ -57,6 +59,8 @@ Args:
     foreign_js: Where to place the optional PureScript FFI file.
         If this is supplied,
         foreign_js must also be supplied.
+    rts_options: Options to pass to GHC's RTS.
+        E.g. `[ "-A1G", "-N4" ]`
     signature_externs: Where to place the optional "signature" externs file.
     standard_externs: Where to place the optional "standard" externs file.
         """,

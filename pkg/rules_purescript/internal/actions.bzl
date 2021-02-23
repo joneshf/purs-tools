@@ -14,7 +14,8 @@ def purs_bundle(
         index_js,
         prefix,
         deps = None,
-        foreign_js = None):
+        foreign_js = None,
+        rts_options = None):
     """
     Bundles a pre-compiled PureScript module.
 
@@ -30,6 +31,8 @@ def purs_bundle(
         foreign_js: The optional FFI files.
             The file must be in a directory named by its module.
             E.g. `Foo.Bar/foreign.js`
+        rts_options: Options to pass to GHC's RTS.
+            E.g. `[ "-A1G", "-N4" ]`
     """
 
     purs = ctx.toolchains["@joneshf_rules_purescript//purescript:toolchain_type"]
@@ -85,6 +88,11 @@ def purs_bundle(
         arguments.add(foreign_js.path)
         inputs.append(foreign_js)
 
+    if rts_options != None:
+        arguments.add("+RTS")
+        arguments.add_all(rts_options)
+        arguments.add("-RTS")
+
     outputs.append(out)
 
     ctx.actions.run(
@@ -110,6 +118,7 @@ def purs_compile_module(
         ffi = None,
         foreign_js = None,
         ignore_warnings = False,
+        rts_options = None,
         signature_externs = None,
         standard_externs = None):
     """
@@ -128,6 +137,8 @@ def purs_compile_module(
             If this is supplied,
             foreign_js must also be supplied.
         ignore_warnings: Opt-out of warnings causing a failure.
+        rts_options: Options to pass to GHC's RTS.
+            E.g. `[ "-A1G", "-N4" ]`
         signature_externs: Where to place the optional "signature" externs file.
         standard_externs: Where to place the optional "standard" externs file.
     """
@@ -181,6 +192,11 @@ def purs_compile_module(
     if standard_externs != None:
         arguments.add("--output-standard-externs-file", standard_externs.path)
         outputs.append(standard_externs)
+
+    if rts_options != None:
+        arguments.add("+RTS")
+        arguments.add_all(rts_options)
+        arguments.add("-RTS")
 
     ctx.actions.run(
         arguments = [
