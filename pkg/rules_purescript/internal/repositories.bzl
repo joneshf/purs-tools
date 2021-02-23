@@ -8,11 +8,11 @@ _purs_linux_url = "https://github.com/purescript/purescript/releases/download/v0
 _purs_macos_sha256 = "210d33ada7022569950801f101dddc013dd69274f2245aec6cab9f4704471c15"
 _purs_macos_url = "https://github.com/purescript/purescript/releases/download/v0.13.8/macos.tar.gz"
 
-_purs_compile_module_linux_sha256 = "2c6b7d4f1e8e1c737bf899ef83d320bde8bdaaf5e5d537e4939f1a582f90b481"
-_purs_compile_module_linux_url = "https://bintray.com/api/ui/download/joneshf/generic/purs-compile-module-1.0.0-rc2-linux.tar.gz"
+_purs_compile_module_linux_sha256 = "9c919a72c0305ff5a733eaaeac45e33af64a3300e684aba8a2a9751dc3c14184"
+_purs_compile_module_linux_url = "https://github.com/joneshf/purs-tools/releases/download/nightly-2021-02-16-02-55-07/purs-compile-module-nightly-2021-02-16-02-55-07-linux.tar.gz"
 
-_purs_compile_module_macos_sha256 = "665333dd29c69ad400f5382f1399ffa643f94d7d8ba818ba53ba7c7ae0d2de98"
-_purs_compile_module_macos_url = "https://bintray.com/api/ui/download/joneshf/generic/purs-compile-module-1.0.0-rc2-macos.tar.gz"
+_purs_compile_module_macos_sha256 = "e04eb2233b56c7f778158d18b8d2be2365276ff8be6fbc14a238793af9d09a44"
+_purs_compile_module_macos_url = "https://github.com/joneshf/purs-tools/releases/download/nightly-2021-02-16-02-55-07/purs-compile-module-nightly-2021-02-16-02-55-07-macOS.tar.gz"
 
 _purs_module_information_linux_sha256 = "7f2d36595908d8b976c7db9f1a872d5bec627e3a929421039e3cd5e576435094"
 _purs_module_information_linux_url = "https://github.com/joneshf/purs-tools/releases/download/nightly-2021-02-16-02-55-07/purs-module-information-nightly-2021-02-16-02-55-07-linux.tar.gz"
@@ -94,7 +94,6 @@ def _purescript_download_binary(
     ctx.report_progress("Downloading purs-compile-module binary")
     ctx.download_and_extract(
         sha256 = purs_compile_module_sha256,
-        stripPrefix = "bin",
         url = purs_compile_module_url,
     )
 
