@@ -174,10 +174,12 @@ displayModeRun mode = case mode of
         Left errors -> do
           debug "Got errors"
           hPutBuilder stderr (getUtf8Builder errors)
+          exitFailure
         Right cstModule -> do
           debug "Got a module"
           debug (display (moduleInformation cstModule))
           hPutBuilder stdout (renderJSON (moduleInformation cstModule))
+          exitSuccess
 
 importModuleName ::
   forall a.
