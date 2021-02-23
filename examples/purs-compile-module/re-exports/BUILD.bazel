@@ -8,6 +8,76 @@ load(
 )
 
 build_test(
+    name = "bar_test",
+    targets = [
+        ":bar",
+    ],
+)
+
+build_test(
+    name = "bar_library_test",
+    targets = [
+        ":bar_library",
+    ],
+)
+
+build_test(
+    name = "baz_test",
+    targets = [
+        ":baz",
+    ],
+)
+
+build_test(
+    name = "baz_library_test",
+    targets = [
+        ":baz_library",
+    ],
+)
+
+build_test(
+    name = "corge_test",
+    targets = [
+        ":corge",
+    ],
+)
+
+build_test(
+    name = "corge_library_test",
+    targets = [
+        ":corge_library",
+    ],
+)
+
+build_test(
+    name = "foo_test",
+    targets = [
+        ":foo",
+    ],
+)
+
+build_test(
+    name = "foo_library_test",
+    targets = [
+        ":foo_library",
+    ],
+)
+
+build_test(
+    name = "grault_test",
+    targets = [
+        ":grault",
+    ],
+)
+
+build_test(
+    name = "grault_library_test",
+    targets = [
+        ":grault_library",
+    ],
+)
+
+build_test(
     name = "qux_library_test",
     targets = [
         ":qux_library",
