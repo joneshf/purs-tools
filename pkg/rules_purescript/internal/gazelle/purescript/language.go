@@ -25,6 +25,11 @@ type pureScript struct {
 	modules           map[string]label.Label
 }
 
+type pureScriptImport struct {
+	module     string
+	reExported bool
+}
+
 type pureScriptModule struct {
 	DefinesInstances bool     `json:"definesInstances"`
 	Imports          []string `json:"imports"`
@@ -119,19 +124,32 @@ func (p *pureScript) Resolve(c *config.Config, ix *resolve.RuleIndex, rc *repo.R
 }
 
 func (p *pureScript) purescriptLibraryResolve(c *config.Config, ix *resolve.RuleIndex, rc *repo.RemoteCache, r *rule.Rule, imports interface{}, from label.Label) {
-	moduleNames := imports.([]string)
-	deps := make([]string, 0, len(moduleNames))
+	psImports := imports.([]pureScriptImport)
+	deps := make([]string, 0, len(psImports))
+	reExportMap := make(map[string]bool)
+	reExports := make([]string, 0)
 
-	for _, moduleName := range moduleNames {
-		moduleLabel, ok := p.modules[moduleName]
+	for _, psImport := range psImports {
+		moduleLabel, ok := p.modules[psImport.module]
 		if ok {
 			dep := moduleLabel.Rel(from.Repo, from.Pkg)
 			deps = append(deps, dep.String())
+			if psImport.reExported {
+				reExportMap[dep.String()] = true
+			}
 		}
+	}
+
+	for reExport := range reExportMap {
+		reExports = append(reExports, reExport)
 	}
 
 	if len(deps) != 0 {
 		r.SetAttr("deps", deps)
+	}
+
+	if len(reExports) != 0 {
+		r.SetAttr("re_exports", reExports)
 	}
 }
 
@@ -158,7 +176,8 @@ func (p *pureScript) purescriptLibraryKinds() rule.KindInfo {
 			"src": true,
 		},
 		ResolveAttrs: map[string]bool{
-			"deps": true,
+			"deps":       true,
+			"re_exports": true,
 		},
 	}
 }
@@ -272,6 +291,10 @@ func (p *pureScript) generatePureScriptRules(args language.GenerateArgs, pureScr
 		return
 	}
 
+	reExports := make(map[string]bool)
+	for _, reExport := range psModule.ReExports {
+		reExports[reExport] = true
+	}
 	name := bazelizePureScriptModuleName(psModule.Module)
 
 	p.modules[psModule.Module] = label.New(args.Config.RepoName, args.Rel, name)
@@ -296,9 +319,12 @@ func (p *pureScript) generatePureScriptRules(args language.GenerateArgs, pureScr
 		r.SetAttr("ffi", ffiFilename)
 	}
 
-	imports := make([]string, 0, len(psModule.Imports))
+	imports := make([]pureScriptImport, 0, len(psModule.Imports))
 	for _, import_ := range psModule.Imports {
-		imports = append(imports, import_)
+		imports = append(imports, pureScriptImport{
+			module:     import_,
+			reExported: reExports[import_],
+		})
 	}
 	result.Imports = append(result.Imports, imports)
 

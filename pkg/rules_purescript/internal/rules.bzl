@@ -214,6 +214,12 @@ purescript_library = rule(
             doc = "The name of the module for this library",
             mandatory = True,
         ),
+        "re_exports": attr.label_list(
+            doc = "Re-exported modules of this library",
+            providers = [
+                PureScriptModuleInfo,
+            ],
+        ),
         "src": attr.label(
             allow_single_file = [
                 ".purs",
