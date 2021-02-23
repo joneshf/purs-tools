@@ -307,6 +307,9 @@ func (p *pureScript) generatePureScriptRules(args language.GenerateArgs, pureScr
 		"//visibility:public",
 	})
 
+	if psModule.DefinesInstances {
+		r.SetAttr("defines_instances", true)
+	}
 	if isDependency {
 		r.SetAttr("ignore_warnings", true)
 	}

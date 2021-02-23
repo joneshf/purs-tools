@@ -194,6 +194,10 @@ def _purescript_library(ctx):
 purescript_library = rule(
     _purescript_library,
     attrs = {
+        "defines_instances": attr.bool(
+            default = False,
+            doc = "Whether this library defines any typeclass instances",
+        ),
         "deps": attr.label_list(
             doc = "Direct dependencies for this library",
             providers = [
