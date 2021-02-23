@@ -11,7 +11,7 @@ module ErrorTest
   )
 where
 
-import qualified "compile-module" Error
+import qualified "error" Error
 import qualified "hedgehog" Hedgehog
 import qualified "hedgehog" Hedgehog.Gen
 import qualified "hedgehog" Hedgehog.Main
