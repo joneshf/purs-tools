@@ -68,8 +68,8 @@ jobs:
         uses: dawidd6/action-download-artifact@891cccee4b25d3306cf5edafa174ddc1d969871f
         with:
           commit: ${{ needs.last-commit.outputs.sha }}
-          name: purs-compile-module-${{ needs.last-commit.outputs.sha }}-macOS.tar.gz
-          path: purs-compile-module-macOS
+          name: purs-compile-module-${{ needs.last-commit.outputs.sha }}-macos.tar.gz
+          path: purs-compile-module-macos
           workflow: main.yaml
 
       - id: purs-externs-linux
@@ -86,8 +86,8 @@ jobs:
         uses: dawidd6/action-download-artifact@891cccee4b25d3306cf5edafa174ddc1d969871f
         with:
           commit: ${{ needs.last-commit.outputs.sha }}
-          name: purs-externs-${{ needs.last-commit.outputs.sha }}-macOS.tar.gz
-          path: purs-externs-macOS
+          name: purs-externs-${{ needs.last-commit.outputs.sha }}-macos.tar.gz
+          path: purs-externs-macos
           workflow: main.yaml
 
       - id: purs-module-information-linux
@@ -104,20 +104,20 @@ jobs:
         uses: dawidd6/action-download-artifact@891cccee4b25d3306cf5edafa174ddc1d969871f
         with:
           commit: ${{ needs.last-commit.outputs.sha }}
-          name: purs-module-information-${{ needs.last-commit.outputs.sha }}-macOS.tar.gz
-          path: purs-module-information-macOS
+          name: purs-module-information-${{ needs.last-commit.outputs.sha }}-macos.tar.gz
+          path: purs-module-information-macos
           workflow: main.yaml
 
       - name: Remove SHA from names
         run: |
           mv purs-compile-module-linux/purs-compile-module.tar.gz "purs-compile-module-${{ needs.last-commit.outputs.tag }}-linux.tar.gz"
-          mv purs-compile-module-macOS/purs-compile-module.tar.gz "purs-compile-module-${{ needs.last-commit.outputs.tag }}-macOS.tar.gz"
+          mv purs-compile-module-macos/purs-compile-module.tar.gz "purs-compile-module-${{ needs.last-commit.outputs.tag }}-macos.tar.gz"
 
           mv purs-externs-linux/purs-externs.tar.gz "purs-externs-${{ needs.last-commit.outputs.tag }}-linux.tar.gz"
-          mv purs-externs-macOS/purs-externs.tar.gz "purs-externs-${{ needs.last-commit.outputs.tag }}-macOS.tar.gz"
+          mv purs-externs-macos/purs-externs.tar.gz "purs-externs-${{ needs.last-commit.outputs.tag }}-macos.tar.gz"
 
           mv purs-module-information-linux/purs-module-information.tar.gz "purs-module-information-${{ needs.last-commit.outputs.tag }}-linux.tar.gz"
-          mv purs-module-information-macOS/purs-module-information.tar.gz "purs-module-information-${{ needs.last-commit.outputs.tag }}-macOS.tar.gz"
+          mv purs-module-information-macos/purs-module-information.tar.gz "purs-module-information-${{ needs.last-commit.outputs.tag }}-macos.tar.gz"
       - env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         name: Create nightly release

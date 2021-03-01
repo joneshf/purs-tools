@@ -113,7 +113,7 @@ jobs:
           # The desired behavior if no files are found using the provided path.
           if-no-files-found: error
           # Artifact name
-          name: purs-compile-module-${{ github.sha }}-macOS.tar.gz
+          name: purs-compile-module-${{ github.sha }}-macos.tar.gz
           # A file, directory or wildcard pattern that describes what to upload
           path: bazel-bin/cmd/purs-compile-module/purs-compile-module.tar.gz
 
@@ -124,7 +124,7 @@ jobs:
           # The desired behavior if no files are found using the provided path.
           if-no-files-found: error
           # Artifact name
-          name: purs-externs-${{ github.sha }}-macOS.tar.gz
+          name: purs-externs-${{ github.sha }}-macos.tar.gz
           # A file, directory or wildcard pattern that describes what to upload
           path: bazel-bin/cmd/purs-externs/purs-externs.tar.gz
 
@@ -135,6 +135,6 @@ jobs:
           # The desired behavior if no files are found using the provided path.
           if-no-files-found: error
           # Artifact name
-          name: purs-module-information-${{ github.sha }}-macOS.tar.gz
+          name: purs-module-information-${{ github.sha }}-macos.tar.gz
           # A file, directory or wildcard pattern that describes what to upload
           path: bazel-bin/cmd/purs-module-information/purs-module-information.tar.gz
