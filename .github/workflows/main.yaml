@@ -28,6 +28,23 @@ jobs:
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
+      - id: normalize
+        name: Normalize Platform
+        run: |
+          case ${{ runner.os }} in
+            Linux)
+              echo '::set-output name=platform::linux'
+              ;;
+            macOS)
+              echo '::set-output name=platform::macos'
+              ;;
+            *)
+              echo 'Platform name "${{ runner.os }}" is not handled'
+              echo 'Update this step to handle this platform name'
+              exit 1
+              ;;
+          esac
+
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - name: Checkout
         uses: actions/checkout@v2.3.4
@@ -73,68 +90,32 @@ jobs:
       - name: Build
         run: make
 
-      - if: runner.os == 'Linux'
-        name: Upload Linux purs-compile-module
+      - name: Upload purs-compile-module
         uses: actions/upload-artifact@v2.2.2
         with:
           # The desired behavior if no files are found using the provided path.
           if-no-files-found: error
           # Artifact name
-          name: purs-compile-module-${{ github.sha }}-linux.tar.gz
+          name: purs-compile-module-${{ github.sha }}-${{ steps.normalize.outputs.platform }}.tar.gz
           # A file, directory or wildcard pattern that describes what to upload
           path: bazel-bin/cmd/purs-compile-module/purs-compile-module.tar.gz
 
-      - if: runner.os == 'Linux'
-        name: Upload Linux purs-externs
+      - name: Upload purs-externs
         uses: actions/upload-artifact@v2.2.2
         with:
           # The desired behavior if no files are found using the provided path.
           if-no-files-found: error
           # Artifact name
-          name: purs-externs-${{ github.sha }}-linux.tar.gz
+          name: purs-externs-${{ github.sha }}-${{ steps.normalize.outputs.platform }}.tar.gz
           # A file, directory or wildcard pattern that describes what to upload
           path: bazel-bin/cmd/purs-externs/purs-externs.tar.gz
 
-      - if: runner.os == 'Linux'
-        name: Upload Linux purs-module-information
+      - name: Upload purs-module-information
         uses: actions/upload-artifact@v2.2.2
         with:
           # The desired behavior if no files are found using the provided path.
           if-no-files-found: error
           # Artifact name
-          name: purs-module-information-${{ github.sha }}-linux.tar.gz
-          # A file, directory or wildcard pattern that describes what to upload
-          path: bazel-bin/cmd/purs-module-information/purs-module-information.tar.gz
-
-      - if: runner.os == 'macOS'
-        name: Upload macOS purs-compile-module
-        uses: actions/upload-artifact@v2.2.2
-        with:
-          # The desired behavior if no files are found using the provided path.
-          if-no-files-found: error
-          # Artifact name
-          name: purs-compile-module-${{ github.sha }}-macos.tar.gz
-          # A file, directory or wildcard pattern that describes what to upload
-          path: bazel-bin/cmd/purs-compile-module/purs-compile-module.tar.gz
-
-      - if: runner.os == 'macOS'
-        name: Upload macOS purs-externs
-        uses: actions/upload-artifact@v2.2.2
-        with:
-          # The desired behavior if no files are found using the provided path.
-          if-no-files-found: error
-          # Artifact name
-          name: purs-externs-${{ github.sha }}-macos.tar.gz
-          # A file, directory or wildcard pattern that describes what to upload
-          path: bazel-bin/cmd/purs-externs/purs-externs.tar.gz
-
-      - if: runner.os == 'macOS'
-        name: Upload macOS purs-module-information
-        uses: actions/upload-artifact@v2.2.2
-        with:
-          # The desired behavior if no files are found using the provided path.
-          if-no-files-found: error
-          # Artifact name
-          name: purs-module-information-${{ github.sha }}-macos.tar.gz
+          name: purs-module-information-${{ github.sha }}-${{ steps.normalize.outputs.platform }}.tar.gz
           # A file, directory or wildcard pattern that describes what to upload
           path: bazel-bin/cmd/purs-module-information/purs-module-information.tar.gz
