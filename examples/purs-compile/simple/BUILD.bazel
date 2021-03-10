@@ -1,0 +1,36 @@
+load(
+    "@bazel_skylib//rules:build_test.bzl",
+    "build_test",
+)
+
+build_test(
+    name = "simple_test",
+    targets = [
+        ":simple",
+    ],
+)
+
+# If we wanted to manage all of the flags and the usage of `purs-compile` by hand,
+# we can use a `genrule` like below.
+# This is largely to show how it's _possible_ to pass flags around.
+# Usage of `purs-compile` should be automated by some other tooling.
+genrule(
+    name = "simple",
+    srcs = [
+        "Foo.purs",
+        "Bar.purs",
+    ],
+    outs = [
+        "output",
+    ],
+    cmd = " ".join(
+        [
+            "$(execpath //cmd/purs-compile)",
+            "--output $@",
+            "$(SRCS)",
+        ],
+    ),
+    tools = [
+        "//cmd/purs-compile",
+    ],
+)

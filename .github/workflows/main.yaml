@@ -90,6 +90,16 @@ jobs:
       - name: Build
         run: make
 
+      - name: Upload purs-compile
+        uses: actions/upload-artifact@v2.2.2
+        with:
+          # The desired behavior if no files are found using the provided path.
+          if-no-files-found: error
+          # Artifact name
+          name: purs-compile-${{ github.sha }}-${{ steps.normalize.outputs.platform }}.tar.gz
+          # A file, directory or wildcard pattern that describes what to upload
+          path: bazel-bin/cmd/purs-compile/purs-compile.tar.gz
+
       - name: Upload purs-compile-module
         uses: actions/upload-artifact@v2.2.2
         with:

@@ -54,6 +54,24 @@ jobs:
     if: ${{ needs.last-commit.outputs.sha != '' }}
 
     steps:
+      - id: purs-compile-linux
+        name: Download Linux purs-compile
+        uses: dawidd6/action-download-artifact@891cccee4b25d3306cf5edafa174ddc1d969871f
+        with:
+          commit: ${{ needs.last-commit.outputs.sha }}
+          name: purs-compile-${{ needs.last-commit.outputs.sha }}-linux.tar.gz
+          path: purs-compile-linux
+          workflow: main.yaml
+
+      - id: purs-compile-macOS
+        name: Download macOS purs-compile
+        uses: dawidd6/action-download-artifact@891cccee4b25d3306cf5edafa174ddc1d969871f
+        with:
+          commit: ${{ needs.last-commit.outputs.sha }}
+          name: purs-compile-${{ needs.last-commit.outputs.sha }}-macos.tar.gz
+          path: purs-compile-macos
+          workflow: main.yaml
+
       - id: purs-compile-module-linux
         name: Download Linux purs-compile-module
         uses: dawidd6/action-download-artifact@891cccee4b25d3306cf5edafa174ddc1d969871f
@@ -110,6 +128,9 @@ jobs:
 
       - name: Remove SHA from names
         run: |
+          mv purs-compile-linux/purs-compile.tar.gz "purs-compile-${{ needs.last-commit.outputs.tag }}-linux.tar.gz"
+          mv purs-compile-macos/purs-compile.tar.gz "purs-compile-${{ needs.last-commit.outputs.tag }}-macos.tar.gz"
+
           mv purs-compile-module-linux/purs-compile-module.tar.gz "purs-compile-module-${{ needs.last-commit.outputs.tag }}-linux.tar.gz"
           mv purs-compile-module-macos/purs-compile-module.tar.gz "purs-compile-module-${{ needs.last-commit.outputs.tag }}-macos.tar.gz"
 

@@ -194,7 +194,9 @@ stack_snapshot(
     local_snapshot = "//:snapshot.yaml",
     packages = [
         # our dependencies
+        "Glob",
         "aeson",
+        "ansi-terminal",
         "hedgehog",
         "optparse-applicative",
         "pretty-simple",
