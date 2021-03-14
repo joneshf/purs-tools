@@ -97,11 +97,11 @@ compile compileOptions = do
       Language.PureScript.Make.Actions.writeCacheDb' (outputDirectory compileOptions) (snd preCompiled)
       let preCompiledModuleNames = RIO.Map.keysSet (fst preCompiled)
       preCompiledExternsFiles <- sortExternsFiles (RIO.Map.elems (fst preCompiled))
-      ms <- Language.PureScript.CST.parseModulesFromFiles id moduleFiles
-      let filePathMap = RIO.Map.fromList (fmap filePathPair ms)
+      unCompiledModules <- Language.PureScript.CST.parseModulesFromFiles id moduleFiles
+      let filePathMap = RIO.Map.fromList (fmap filePathPair unCompiledModules)
       foreigns <- Language.PureScript.Make.inferForeignModules filePathMap
       let makeActions = Language.PureScript.Make.Actions.buildMakeActions (outputDirectory compileOptions) filePathMap foreigns (usePrefix compileOptions)
-      sortedModules <- Language.PureScript.ModuleDependencies.sortModules (partialResultModuleSignature preCompiledModuleNames) ms
+      sortedModules <- Language.PureScript.ModuleDependencies.sortModules (partialResultModuleSignature preCompiledModuleNames) unCompiledModules
       compileModules makeActions preCompiledExternsFiles (fst sortedModules)
   printWarningsAndErrors (Language.PureScript.Options.optionsVerboseErrors (options compileOptions)) (jsonErrors compileOptions) makeWarnings makeErrors
   exitSuccess
