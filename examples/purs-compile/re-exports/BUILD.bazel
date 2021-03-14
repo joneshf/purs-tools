@@ -1,0 +1,180 @@
+load(
+    "@bazel_skylib//rules:build_test.bzl",
+    "build_test",
+)
+
+build_test(
+    name = "bar_test",
+    targets = [
+        ":bar",
+    ],
+)
+
+build_test(
+    name = "baz_test",
+    targets = [
+        ":baz",
+    ],
+)
+
+build_test(
+    name = "corge_test",
+    targets = [
+        ":corge",
+    ],
+)
+
+build_test(
+    name = "foo_test",
+    targets = [
+        ":foo",
+    ],
+)
+
+build_test(
+    name = "grault_test",
+    targets = [
+        ":grault",
+    ],
+)
+
+build_test(
+    name = "qux_test",
+    targets = [
+        ":qux",
+    ],
+)
+
+# If we wanted to manage all of the flags and the usage of `purs-compile` by hand,
+# we can use a `genrule` like below.
+# This is largely to show how it's _possible_ to pass flags around.
+# Usage of `purs-compile` should be automated by some other tooling.
+genrule(
+    name = "bar",
+    srcs = [
+        ":foo",
+        "Bar.purs",
+    ],
+    outs = [
+        "output-bar",
+    ],
+    cmd = " ".join(
+        [
+            "$(execpath //cmd/purs-compile)",
+            "--include $(execpath :foo)",
+            "--output $@",
+            "$(execpath Bar.purs)",
+        ],
+    ),
+    tools = [
+        "//cmd/purs-compile",
+    ],
+)
+
+genrule(
+    name = "baz",
+    srcs = [
+        ":bar",
+        "Baz.purs",
+    ],
+    outs = [
+        "output-baz",
+    ],
+    cmd = " ".join(
+        [
+            "$(execpath //cmd/purs-compile)",
+            "--include $(execpath :bar)",
+            "--output $@",
+            "$(execpath Baz.purs)",
+        ],
+    ),
+    tools = [
+        "//cmd/purs-compile",
+    ],
+)
+
+genrule(
+    name = "corge",
+    srcs = [
+        ":qux",
+        "Corge.purs",
+    ],
+    outs = [
+        "output-corge",
+    ],
+    cmd = " ".join(
+        [
+            "$(execpath //cmd/purs-compile)",
+            "--include $(execpath :qux)",
+            "--output $@",
+            "$(execpath Corge.purs)",
+        ],
+    ),
+    tools = [
+        "//cmd/purs-compile",
+    ],
+)
+
+genrule(
+    name = "foo",
+    srcs = [
+        "Foo.purs",
+    ],
+    outs = [
+        "output-foo",
+    ],
+    cmd = " ".join(
+        [
+            "$(execpath //cmd/purs-compile)",
+            "--output $@",
+            "$(execpath Foo.purs)",
+        ],
+    ),
+    tools = [
+        "//cmd/purs-compile",
+    ],
+)
+
+genrule(
+    name = "grault",
+    srcs = [
+        ":corge",
+        "Grault.purs",
+    ],
+    outs = [
+        "output-grault",
+    ],
+    cmd = " ".join(
+        [
+            "$(execpath //cmd/purs-compile)",
+            "--include $(execpath :corge)",
+            "--output $@",
+            "$(execpath Grault.purs)",
+        ],
+    ),
+    tools = [
+        "//cmd/purs-compile",
+    ],
+)
+
+genrule(
+    name = "qux",
+    srcs = [
+        ":baz",
+        "Qux.purs",
+    ],
+    outs = [
+        "output-qux",
+    ],
+    cmd = " ".join(
+        [
+            "$(execpath //cmd/purs-compile)",
+            "--include $(execpath :baz)",
+            "--output $@",
+            "$(execpath Qux.purs)",
+        ],
+    ),
+    tools = [
+        "//cmd/purs-compile",
+    ],
+)

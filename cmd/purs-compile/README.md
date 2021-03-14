@@ -75,5 +75,81 @@ Compiling Baz
 
 This is the same as with `purs compile`.
 
+### Compiling with "packages"
+
+If we have a bunch of PureScript modules we'd like to compile as a "package,"
+we can also do that and further depend on the pre-compiled artifacts.
+
+Let's say we have a module that depends on the `purescript-prelude` package:
+
+```PureScript
+module Foo
+  ( foo
+  ) where
+
+import Prelude
+
+foo :: Int
+foo = 1 + 2
+```
+
+We can compile `purescript-prelude` first:
+
+```Console
+$ purs-compile --output output-prelude '.spago/prelude/v4.1.1/src/**/*.purs'
+Compiling Type.Data.RowList
+Compiling Type.Data.Row
+Compiling Record.Unsafe
+Compiling Data.NaturalTransformation
+Compiling Data.Boolean
+Compiling Data.Symbol
+Compiling Control.Semigroupoid
+Compiling Control.Category
+Compiling Data.Show
+Compiling Data.Void
+Compiling Data.Unit
+Compiling Data.Semiring
+Compiling Data.HeytingAlgebra
+Compiling Data.Semigroup
+Compiling Data.Ring
+Compiling Data.BooleanAlgebra
+Compiling Data.Eq
+Compiling Data.CommutativeRing
+Compiling Data.Ordering
+Compiling Data.EuclideanRing
+Compiling Data.Ord.Unsafe
+Compiling Data.Ord
+Compiling Data.DivisionRing
+Compiling Data.Field
+Compiling Data.Function
+Compiling Data.Bounded
+Compiling Data.Monoid
+Compiling Data.Functor
+Compiling Control.Apply
+Compiling Control.Applicative
+Compiling Control.Bind
+Compiling Control.Monad
+Compiling Prelude
+Compiling Data.Monoid.Endo
+Compiling Data.Semigroup.First
+Compiling Data.Monoid.Additive
+Compiling Data.Monoid.Conj
+Compiling Data.Monoid.Multiplicative
+Compiling Data.Semigroup.Last
+Compiling Data.Monoid.Disj
+Compiling Data.Monoid.Dual
+```
+
+Then we can compile our module with the pre-compiled `purescript-prelude` artifacts:
+
+```Console
+$ purs-compile --include output-prelude Foo.purs
+Compiling Foo
+```
+
+N.B. It's important to note that since we're using pre-compiled dependencies,
+we do not require all of the transitive sources passed to `purs-compile`.
+
 [github releases]: https://github.com/joneshf/purs-tools/releases
 [purescript]: https://www.purescript.org/
+[purescript package]: https://hackage.haskell.org/package/purescript

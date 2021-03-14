@@ -1,0 +1,41 @@
+load(
+    "@bazel_skylib//rules:build_test.bzl",
+    "build_test",
+)
+
+build_test(
+    name = "io_test",
+    targets = [
+        ":io",
+    ],
+)
+
+# If we wanted to manage all of the flags and the usage of `purs-compile` by hand,
+# we can use a `genrule` like below.
+# This is largely to show how it's _possible_ to pass flags around.
+# Usage of `purs-compile` should be automated by some other tooling.
+genrule(
+    name = "io",
+    srcs = [
+        "//examples/purs-compile/dependencies/string",
+        "IO.js",
+        "IO.purs",
+    ],
+    outs = [
+        "output",
+    ],
+    cmd = " ".join(
+        [
+            "$(execpath //cmd/purs-compile)",
+            "--include $(execpath //examples/purs-compile/dependencies/string)",
+            "--output $@",
+            "$(execpath IO.purs)",
+        ],
+    ),
+    tools = [
+        "//cmd/purs-compile",
+    ],
+    visibility = [
+        "//examples/purs-compile/dependencies:__subpackages__",
+    ],
+)

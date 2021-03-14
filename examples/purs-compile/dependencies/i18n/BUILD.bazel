@@ -1,0 +1,40 @@
+load(
+    "@bazel_skylib//rules:build_test.bzl",
+    "build_test",
+)
+
+build_test(
+    name = "i18n_test",
+    targets = [
+        ":i18n",
+    ],
+)
+
+# If we wanted to manage all of the flags and the usage of `purs-compile` by hand,
+# we can use a `genrule` like below.
+# This is largely to show how it's _possible_ to pass flags around.
+# Usage of `purs-compile` should be automated by some other tooling.
+genrule(
+    name = "i18n",
+    srcs = [
+        "//examples/purs-compile/dependencies/string",
+        "I18n.purs",
+    ],
+    outs = [
+        "output",
+    ],
+    cmd = " ".join(
+        [
+            "$(execpath //cmd/purs-compile)",
+            "--include $(execpath //examples/purs-compile/dependencies/string)",
+            "--output $@",
+            "$(execpath I18n.purs)",
+        ],
+    ),
+    tools = [
+        "//cmd/purs-compile",
+    ],
+    visibility = [
+        "//examples/purs-compile/dependencies:__subpackages__",
+    ],
+)
