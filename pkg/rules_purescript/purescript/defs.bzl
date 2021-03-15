@@ -15,6 +15,7 @@ load(
     "//internal:rules.bzl",
     _purescript_binary = "purescript_binary",
     _purescript_library = "purescript_library",
+    _purescript_package = "purescript_package",
 )
 load(
     "//internal:toolchains.bzl",
@@ -74,6 +75,8 @@ def purescript_binary(
     )
 
 purescript_library = _purescript_library
+
+purescript_package = _purescript_package
 
 def purescript_test(
         name,

@@ -2,11 +2,29 @@ load(
     "@bazel_skylib//rules:build_test.bzl",
     "build_test",
 )
+load(
+    "@joneshf_rules_purescript//purescript:defs.bzl",
+    "purescript_package",
+)
+
+build_test(
+    name = "bar_package_test",
+    targets = [
+        ":bar_package",
+    ],
+)
 
 build_test(
     name = "bar_test",
     targets = [
         ":bar",
+    ],
+)
+
+build_test(
+    name = "baz_package_test",
+    targets = [
+        ":baz_package",
     ],
 )
 
@@ -18,9 +36,23 @@ build_test(
 )
 
 build_test(
+    name = "corge_package_test",
+    targets = [
+        ":corge_package",
+    ],
+)
+
+build_test(
     name = "corge_test",
     targets = [
         ":corge",
+    ],
+)
+
+build_test(
+    name = "foo_package_test",
+    targets = [
+        ":foo_package",
     ],
 )
 
@@ -32,9 +64,23 @@ build_test(
 )
 
 build_test(
+    name = "grault_package_test",
+    targets = [
+        ":grault_package",
+    ],
+)
+
+build_test(
     name = "grault_test",
     targets = [
         ":grault",
+    ],
+)
+
+build_test(
+    name = "qux_package_test",
+    targets = [
+        ":qux_package",
     ],
 )
 
@@ -176,5 +222,65 @@ genrule(
     ),
     tools = [
         "//cmd/purs-compile",
+    ],
+)
+
+# If we don't want to manage everything ourselves,
+# we can use rules like below.
+# This is more likely how we'd actually want to interact with `bazel`.
+purescript_package(
+    name = "bar_package",
+    srcs = [
+        "Bar.purs",
+    ],
+    deps = [
+        ":foo_package",
+    ],
+)
+
+purescript_package(
+    name = "baz_package",
+    srcs = [
+        "Baz.purs",
+    ],
+    deps = [
+        ":bar_package",
+    ],
+)
+
+purescript_package(
+    name = "corge_package",
+    srcs = [
+        "Corge.purs",
+    ],
+    deps = [
+        ":qux_package",
+    ],
+)
+
+purescript_package(
+    name = "foo_package",
+    srcs = [
+        "Foo.purs",
+    ],
+)
+
+purescript_package(
+    name = "grault_package",
+    srcs = [
+        "Grault.purs",
+    ],
+    deps = [
+        ":corge_package",
+    ],
+)
+
+purescript_package(
+    name = "qux_package",
+    srcs = [
+        "Qux.purs",
+    ],
+    deps = [
+        ":baz_package",
     ],
 )

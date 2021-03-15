@@ -2,6 +2,17 @@ load(
     "@bazel_skylib//rules:build_test.bzl",
     "build_test",
 )
+load(
+    "@joneshf_rules_purescript//purescript:defs.bzl",
+    "purescript_package",
+)
+
+build_test(
+    name = "string_package_test",
+    targets = [
+        ":string_package",
+    ],
+)
 
 build_test(
     name = "string_test",
@@ -32,6 +43,22 @@ genrule(
     ),
     tools = [
         "//cmd/purs-compile",
+    ],
+    visibility = [
+        "//examples/purs-compile/dependencies:__subpackages__",
+    ],
+)
+
+# If we don't want to manage everything ourselves,
+# we can use a rule like below.
+# This is more likely how we'd actually want to interact with `bazel`.
+purescript_package(
+    name = "string_package",
+    srcs = [
+        "String.purs",
+    ],
+    ffis = [
+        "String.js",
     ],
     visibility = [
         "//examples/purs-compile/dependencies:__subpackages__",

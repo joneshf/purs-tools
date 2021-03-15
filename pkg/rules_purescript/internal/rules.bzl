@@ -5,6 +5,7 @@ Rules for building PureScript.
 load(
     "//internal:providers.bzl",
     "PureScriptModuleInfo",
+    "PureScriptPackageInfo",
 )
 
 def _purescript_binary(ctx):
@@ -266,6 +267,97 @@ For more information, see: https://downloads.haskell.org/ghc/8.6.5/docs/html/use
                 ".purs",
             ],
             doc = "Source file to compile for this library",
+            mandatory = True,
+        ),
+    },
+    doc = """
+Compiles a PureScript module to a JavaScript file.
+""",
+    toolchains = [
+        "@joneshf_rules_purescript//purescript:toolchain_type",
+    ],
+)
+
+def _purescript_package(ctx):
+    """
+    Compiles PureScript modules to JavaScript files.
+
+    Args:
+        ctx: Analysis context.
+    """
+
+    purs = ctx.toolchains["@joneshf_rules_purescript//purescript:toolchain_type"]
+
+    outputs = []
+
+    output_directory = ctx.actions.declare_directory(
+        "output-{name}".format(
+            name = ctx.label.name,
+        ),
+    )
+    outputs.append(output_directory)
+
+    purs.compile(
+        ctx,
+        deps = ctx.attr.deps,
+        ffis = ctx.files.ffis,
+        output_directory = output_directory,
+        rts_options = ctx.attr.rts_options,
+        srcs = ctx.files.srcs,
+    )
+
+    return [
+        DefaultInfo(
+            files = depset([output for output in outputs]),
+        ),
+        PureScriptPackageInfo(
+            info = struct(
+                output_directory = output_directory,
+            ),
+            deps = depset(
+                direct = [dep[PureScriptPackageInfo].info.output_directory for dep in ctx.attr.deps],
+                transitive = [dep[PureScriptPackageInfo].deps for dep in ctx.attr.deps],
+            ),
+        ),
+    ]
+
+purescript_package = rule(
+    _purescript_package,
+    attrs = {
+        "deps": attr.label_list(
+            doc = "Direct dependencies for this \"package\"",
+            providers = [
+                PureScriptPackageInfo,
+            ],
+        ),
+        "ffis": attr.label_list(
+            allow_files = [
+                ".js",
+            ],
+            doc = "Optional FFI files to compile for this \"package\"",
+        ),
+        "rts_options": attr.string_list(
+            default = [
+                "-N1",
+            ],
+            doc = """
+Options to pass to GHC's RTS.
+Defaults to `-N1` (a single capability for parallelism).
+
+Use this for fine-tuning the individual compilation.
+
+Pass the options as though they would be between `+RTS` and `-RTS`.
+E.g. If you would normally say `purs compile +RTS -A1G -N4 -RTS`,
+then you'd want to say `rts_options = [ "-A1G", "-N4" ]`.
+
+For more information, see: https://downloads.haskell.org/ghc/8.6.5/docs/html/users_guide/runtime_control.html
+""",
+        ),
+        "srcs": attr.label_list(
+            allow_files = [
+                ".purs",
+            ],
+            doc = "Source files to compile for this \"package\"",
             mandatory = True,
         ),
     },

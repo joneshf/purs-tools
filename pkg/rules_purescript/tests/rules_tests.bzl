@@ -15,6 +15,7 @@ load(
     "//internal:rules.bzl",
     "purescript_binary",
     "purescript_library",
+    "purescript_package",
 )
 load(
     ":list_helpers.bzl",
@@ -267,6 +268,89 @@ _purescript_library_works_with_dependencies_test = analysistest.make(
     _purescript_library_works_with_dependencies_implementation_test,
 )
 
+def _purescript_package_works_with_only_purescript_implementation_test(ctx):
+    """
+    Test to verify that compiled PureScript files generate the correct actions.
+    """
+    env = analysistest.begin(ctx)
+
+    actions = analysistest.target_actions(env)
+    purs_compile_action = find_action(env, actions, "PursCompile")
+
+    inputs = [input.basename for input in purs_compile_action.inputs.to_list()]
+    asserts.equals(env, 2, len(inputs))
+    contains(env, inputs, "purs-compile", "Expected purs-compile to be an input")
+    contains(env, inputs, "PureScriptOnly.purs", "Expected PureScriptOnly.purs to be an input")
+
+    outputs = [output.basename for output in purs_compile_action.outputs.to_list()]
+    asserts.equals(env, 1, len(outputs))
+    contains(env, outputs, "output-purescript_package_works_with_only_purescript_fake_target", "Expected output-purescript_package_works_with_only_purescript_fake_target to be an output")
+
+    argv = purs_compile_action.argv
+    contains(env, argv, "--output", "Expected --output to be an argument")
+    return analysistest.end(env)
+
+_purescript_package_works_with_only_purescript_test = analysistest.make(
+    _purescript_package_works_with_only_purescript_implementation_test,
+)
+
+def _purescript_package_works_with_purescript_and_ffi_implementation_test(ctx):
+    """
+    Test to verify that both compiled PureScript and FFI files generate the correct actions.
+    """
+    env = analysistest.begin(ctx)
+
+    actions = analysistest.target_actions(env)
+    purs_compile_action = find_action(env, actions, "PursCompile")
+
+    inputs = [input.basename for input in purs_compile_action.inputs.to_list()]
+    asserts.equals(env, 3, len(inputs))
+    contains(env, inputs, "purs-compile", "Expected purs-compile to be an input")
+    contains(env, inputs, "PureScriptAndFFI.js", "Expected PureScriptAndFFI.js to be an input")
+    contains(env, inputs, "PureScriptAndFFI.purs", "Expected PureScriptAndFFI.purs to be an input")
+
+    outputs = [output.basename for output in purs_compile_action.outputs.to_list()]
+    asserts.equals(env, 1, len(outputs))
+    contains(env, outputs, "output-purescript_package_works_with_purescript_and_ffi_fake_target", "Expected output-purescript_package_works_with_purescript_and_ffi_fake_target to be an output")
+
+    argv = purs_compile_action.argv
+    contains(env, argv, "--output", "Expected --output to be an argument")
+
+    return analysistest.end(env)
+
+_purescript_package_works_with_purescript_and_ffi_test = analysistest.make(
+    _purescript_package_works_with_purescript_and_ffi_implementation_test,
+)
+
+def _purescript_package_works_with_dependencies_implementation_test(ctx):
+    """
+    Test to verify that compiled PureScript files generate the correct actions.
+    """
+    env = analysistest.begin(ctx)
+
+    actions = analysistest.target_actions(env)
+    purs_compile_action = find_action(env, actions, "PursCompile")
+
+    inputs = [input.basename for input in purs_compile_action.inputs.to_list()]
+    asserts.equals(env, 3, len(inputs))
+    contains(env, inputs, "purs-compile", "Expected purs-compile to be an input")
+    contains(env, inputs, "Foo.purs", "Expected Foo.purs to be an input")
+    contains(env, inputs, "output-purescript_package_works_with_dependencies_bar_fake_target", "Expected output-purescript_package_works_with_dependencies_bar_fake_target to be an input")
+
+    outputs = [output.basename for output in purs_compile_action.outputs.to_list()]
+    asserts.equals(env, 1, len(outputs))
+    contains(env, outputs, "output-purescript_package_works_with_dependencies_foo_fake_target", "Expected output-purescript_package_works_with_dependencies_foo_fake_target to be an output")
+
+    argv = purs_compile_action.argv
+    contains(env, argv, "--output", "Expected --output to be an argument")
+    contains(env, argv, "--include", "Expected --include to be an argument")
+
+    return analysistest.end(env)
+
+_purescript_package_works_with_dependencies_test = analysistest.make(
+    _purescript_package_works_with_dependencies_implementation_test,
+)
+
 def purescript_binary_tests_suite(name):
     """
     A suite of tests around purescript_binary.
@@ -380,6 +464,71 @@ def purescript_library_tests_suite(name):
         name = "purescript_library_works_with_dependencies_bar_fake_target",
         module = "Bar",
         src = "Bar.purs",
+        tags = [
+            "manual",
+        ],
+    )
+
+def purescript_package_tests_suite(name):
+    """
+    A suite of tests around purescript_package.
+
+    Args:
+        name: A unique name for this target.
+    """
+
+    _purescript_package_works_with_only_purescript_test(
+        name = "purescript_package_works_with_only_purescript_test",
+        target_under_test = ":purescript_package_works_with_only_purescript_fake_target",
+    )
+    purescript_package(
+        name = "purescript_package_works_with_only_purescript_fake_target",
+        srcs = [
+            "PureScriptOnly.purs",
+        ],
+        tags = [
+            "manual",
+        ],
+    )
+
+    _purescript_package_works_with_purescript_and_ffi_test(
+        name = "purescript_package_works_with_purescript_and_ffi_test",
+        target_under_test = ":purescript_package_works_with_purescript_and_ffi_fake_target",
+    )
+    purescript_package(
+        name = "purescript_package_works_with_purescript_and_ffi_fake_target",
+        ffis = [
+            "PureScriptAndFFI.js",
+        ],
+        srcs = [
+            "PureScriptAndFFI.purs",
+        ],
+        tags = [
+            "manual",
+        ],
+    )
+
+    _purescript_package_works_with_dependencies_test(
+        name = "purescript_package_works_with_dependencies_test",
+        target_under_test = ":purescript_package_works_with_dependencies_foo_fake_target",
+    )
+    purescript_package(
+        name = "purescript_package_works_with_dependencies_foo_fake_target",
+        srcs = [
+            "Foo.purs",
+        ],
+        deps = [
+            ":purescript_package_works_with_dependencies_bar_fake_target",
+        ],
+        tags = [
+            "manual",
+        ],
+    )
+    purescript_package(
+        name = "purescript_package_works_with_dependencies_bar_fake_target",
+        srcs = [
+            "Bar.purs",
+        ],
         tags = [
             "manual",
         ],

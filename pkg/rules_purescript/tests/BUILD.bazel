@@ -12,6 +12,7 @@ load(
     ":rules_tests.bzl",
     "purescript_binary_tests_suite",
     "purescript_library_tests_suite",
+    "purescript_package_tests_suite",
 )
 
 purescript_binary_tests_suite(
@@ -20,6 +21,10 @@ purescript_binary_tests_suite(
 
 purescript_library_tests_suite(
     name = "purescript_library",
+)
+
+purescript_package_tests_suite(
+    name = "purescript_package",
 )
 
 purs_bundle_tests_suite(
