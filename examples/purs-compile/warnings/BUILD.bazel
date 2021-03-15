@@ -1,0 +1,66 @@
+load(
+    "@bazel_skylib//rules:build_test.bzl",
+    "build_test",
+)
+load(
+    "@joneshf_rules_purescript//purescript:defs.bzl",
+    "purescript_package",
+)
+
+build_test(
+    name = "warning_package_test",
+    targets = [
+        ":warning_package",
+    ],
+)
+
+build_test(
+    name = "warning_test",
+    targets = [
+        ":warning",
+    ],
+)
+
+filegroup(
+    name = "purs_files",
+    srcs = [
+        "Bar.purs",
+        "Foo.purs",
+    ],
+)
+
+# If we wanted to manage all of the flags and the usage of `purs-compile` by hand,
+# we can use a `genrule` like below.
+# This is largely to show how it's _possible_ to pass flags around.
+# Usage of `purs-compile` should be automated by some other tooling.
+genrule(
+    name = "warning",
+    srcs = [
+        "Foo.purs",
+        "Bar.purs",
+    ],
+    outs = [
+        "output",
+    ],
+    cmd = " ".join(
+        [
+            "$(execpath //cmd/purs-compile)",
+            "--ignore-warnings",
+            "--output $@",
+            "$(SRCS)",
+        ],
+    ),
+    tools = [
+        "//cmd/purs-compile",
+    ],
+)
+
+# If we don't want to manage everything ourselves,
+# we can use a rule like below.
+# This is more likely how we'd actually want to interact with `bazel`.
+purescript_package(
+    name = "warning_package",
+    srcs = [
+        ":purs_files",
+    ],
+)

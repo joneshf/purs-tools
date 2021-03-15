@@ -42,6 +42,7 @@ data CompileOptions = CompileOptions
     options :: Language.PureScript.Options.Options,
     usePrefix :: Bool,
     jsonErrors :: Bool,
+    ignoreWarnings :: Bool,
     includeDirectories :: [FilePath]
   }
 
@@ -111,7 +112,7 @@ compile compileOptions = do
       -- But, it might also be intentional for some reason.
       newCacheDb <- Language.PureScript.Make.Actions.readCacheDb makeActions
       Language.PureScript.Make.Actions.writeCacheDb makeActions (RIO.Map.union newCacheDb (snd preCompiled))
-  printWarningsAndErrors (Language.PureScript.Options.optionsVerboseErrors (options compileOptions)) (jsonErrors compileOptions) makeWarnings makeErrors
+  printWarningsAndErrors (ignoreWarnings compileOptions) (Language.PureScript.Options.optionsVerboseErrors (options compileOptions)) (jsonErrors compileOptions) makeWarnings makeErrors
   exitSuccess
 
 compileOptionsDescription :: Options.Applicative.InfoMod CompileOptions
@@ -128,6 +129,7 @@ compileOptionsParser =
     <*> optionsParser
     <*> fmap not noPrefixParser
     <*> jsonErrorsParser
+    <*> ignoreWarningsParser
     <*> many includeDirectoryParser
 
 compileOptionsParserInfo :: Options.Applicative.ParserInfo CompileOptions
@@ -239,6 +241,13 @@ handleCodegenTargets ::
 handleCodegenTargets targets
   | Language.PureScript.Options.JSSourceMap `elem` targets = RIO.Set.fromList (Language.PureScript.Options.JS : targets)
   | otherwise = RIO.Set.fromList targets
+
+ignoreWarningsParser :: Options.Applicative.Parser Bool
+ignoreWarningsParser =
+  Options.Applicative.switch
+    ( Options.Applicative.help "Don't let warnings fail compilation"
+        <> Options.Applicative.long "ignore-warnings"
+    )
 
 includeAllPreCompiledArtifacts ::
   FilePath ->
@@ -401,20 +410,23 @@ preCompiledModule externsFile =
         (fmap preCompiledImport (Language.PureScript.Externs.efImports externsFile))
         (Just (Language.PureScript.Externs.efExports externsFile))
 
--- | Arguments: verbose, use JSON, warnings, errors
+-- | Arguments: ignore errors, verbose, use JSON, warnings, errors
 printWarningsAndErrors ::
   forall a.
+  Bool ->
   Bool ->
   Bool ->
   Language.PureScript.Errors.MultipleErrors ->
   Either Language.PureScript.Errors.MultipleErrors a ->
   RIO SimpleApp ()
-printWarningsAndErrors verbose useJSON warnings errors'
+printWarningsAndErrors ignoreWarnings' verbose useJSON warnings errors'
   | useJSON = do
     RIO.ByteString.Lazy.hPut stderr (Data.Aeson.encode (jsonResult verbose warnings errors'))
     case errors' of
       Left _ -> exitFailure
-      Right _ -> pure ()
+      Right _ -> do
+        when (not ignoreWarnings' && Language.PureScript.Errors.nonEmpty warnings) do
+          exitFailure
   | otherwise = do
     relativeDirectory <- RIO.Directory.getCurrentDirectory
     stderrSupportsColor <- liftIO (System.Console.ANSI.hSupportsANSI stderr)
@@ -435,7 +447,8 @@ printWarningsAndErrors verbose useJSON warnings errors'
         hPutBuilder stderr (fromString (Language.PureScript.Errors.prettyPrintMultipleErrors ppeOptions errors))
         exitFailure
       Right _ -> do
-        pure ()
+        when (not ignoreWarnings' && Language.PureScript.Errors.nonEmpty warnings) do
+          exitFailure
 
 pursFileParser :: Options.Applicative.Parser FilePath
 pursFileParser =
