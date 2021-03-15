@@ -5,6 +5,7 @@ load(
 
 exports_files(
     [
+        "purs-compile",
         "purs-compile-module",
         "purs-module-information",
         "purs",
@@ -17,6 +18,7 @@ exports_files(
 filegroup(
     name = "tools",
     srcs = [
+        "purs-compile",
         "purs-compile-module",
         "purs-module-information",
         "purs",
@@ -29,6 +31,7 @@ filegroup(
 purescript_toolchain(
     name = "toolchain_impl",
     purs = "purs",
+    purs_compile = "purs-compile",
     purs_compile_module = "purs-compile-module",
 )
 

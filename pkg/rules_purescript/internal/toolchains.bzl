@@ -5,6 +5,7 @@ Rules for setting up the PureScript toolchain.
 load(
     ":actions.bzl",
     "purs_bundle",
+    "purs_compile",
     "purs_compile_module",
 )
 
@@ -12,8 +13,10 @@ def _purescript_toolchain(ctx):
     return [
         platform_common.ToolchainInfo(
             bundle = purs_bundle,
+            compile = purs_compile,
             compile_module = purs_compile_module,
             internal = struct(
+                purs_compile = ctx.file.purs_compile,
                 purs_compile_module = ctx.file.purs_compile_module,
                 purs = ctx.file.purs,
             ),
@@ -26,6 +29,11 @@ purescript_toolchain = rule(
         "purs": attr.label(
             allow_single_file = True,
             doc = "The official PureScript compiler",
+            mandatory = True,
+        ),
+        "purs_compile": attr.label(
+            allow_single_file = True,
+            doc = "The unofficial batch PureScript compiler",
             mandatory = True,
         ),
         "purs_compile_module": attr.label(

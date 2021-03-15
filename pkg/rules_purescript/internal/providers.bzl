@@ -43,6 +43,18 @@ Args:
     rts_options: Options to pass to GHC's RTS.
         E.g. `[ "-A1G", "-N4" ]`
         """,
+        "compile": """
+    Compiles a batch of PureScript modules from source.
+
+Args:
+    ctx: Analysis context.
+    output_directory: Where to place the compiled artifacts.
+    srcs: The PureScript source files to be compiled.
+    deps: The direct dependencies for this PureScript module.
+    ffis: The optional PureScript FFI files.
+    rts_options: Options to pass to GHC's RTS.
+        E.g. `[ "-A1G", "-N4" ]`
+        """,
         "compile_module": """
 Compiles a single PureScript module from source.
 

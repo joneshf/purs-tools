@@ -8,6 +8,12 @@ _purs_linux_url = "https://github.com/purescript/purescript/releases/download/v0
 _purs_macos_sha256 = "210d33ada7022569950801f101dddc013dd69274f2245aec6cab9f4704471c15"
 _purs_macos_url = "https://github.com/purescript/purescript/releases/download/v0.13.8/macos.tar.gz"
 
+_purs_compile_linux_sha256 = "c187a1f4b9c0be4c9fc79f459919653b5f859367133507047f80300e8e836cda"
+_purs_compile_linux_url = "https://github.com/joneshf/purs-tools/releases/download/nightly-2021-03-15-10-01-44/purs-compile-nightly-2021-03-15-10-01-44-linux.tar.gz"
+
+_purs_compile_macos_sha256 = "dbbcea2b9b6bf0a05589925f66c53ec8777b868d36731b5ff15bc538c3da190c"
+_purs_compile_macos_url = "https://github.com/joneshf/purs-tools/releases/download/nightly-2021-03-15-10-01-44/purs-compile-nightly-2021-03-15-10-01-44-macos.tar.gz"
+
 _purs_compile_module_linux_sha256 = "353ee208fdbe34cb6136dc03c647e27f57a8181871bc5f6cbdca3be68bfc1bee"
 _purs_compile_module_linux_url = "https://github.com/joneshf/purs-tools/releases/download/nightly-2021-03-15-10-01-44/purs-compile-module-nightly-2021-03-15-10-01-44-linux.tar.gz"
 
@@ -33,6 +39,8 @@ def _purescript_download(ctx):
             ctx,
             purs_sha256 = _purs_linux_sha256,
             purs_url = _purs_linux_url,
+            purs_compile_sha256 = _purs_compile_linux_sha256,
+            purs_compile_url = _purs_compile_linux_url,
             purs_compile_module_sha256 = _purs_compile_module_linux_sha256,
             purs_compile_module_url = _purs_compile_module_linux_url,
             purs_module_information_sha256 = _purs_module_information_linux_sha256,
@@ -45,6 +53,8 @@ def _purescript_download(ctx):
             ctx,
             purs_sha256 = _purs_macos_sha256,
             purs_url = _purs_macos_url,
+            purs_compile_sha256 = _purs_compile_macos_sha256,
+            purs_compile_url = _purs_compile_macos_url,
             purs_compile_module_sha256 = _purs_compile_module_macos_sha256,
             purs_compile_module_url = _purs_compile_module_macos_url,
             purs_module_information_sha256 = _purs_module_information_macos_sha256,
@@ -63,6 +73,8 @@ def _purescript_download_binary(
         ctx,
         purs_sha256,
         purs_url,
+        purs_compile_sha256,
+        purs_compile_url,
         purs_compile_module_sha256,
         purs_compile_module_url,
         purs_module_information_sha256,
@@ -76,6 +88,8 @@ def _purescript_download_binary(
         ctx: Repository context.
         purs_sha256: SHA256 for Purs tarball.
         purs_url: URL for the Purs tarball.
+        purs_compile_sha256: SHA256 for purs-compile tarball.
+        purs_compile_url: URL for the purs-compile tarball.
         purs_compile_module_sha256: SHA256 for purs-compile-module tarball.
         purs_compile_module_url: URL for the purs-compile-module tarball.
         purs_module_information_sha256: SHA256 for purs-module-information tarball.
@@ -89,6 +103,12 @@ def _purescript_download_binary(
         sha256 = purs_sha256,
         stripPrefix = "purescript",
         url = purs_url,
+    )
+
+    ctx.report_progress("Downloading purs-compile binary")
+    ctx.download_and_extract(
+        sha256 = purs_compile_sha256,
+        url = purs_compile_url,
     )
 
     ctx.report_progress("Downloading purs-compile-module binary")
