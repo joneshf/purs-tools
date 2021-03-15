@@ -8,17 +8,17 @@ _purs_linux_url = "https://github.com/purescript/purescript/releases/download/v0
 _purs_macos_sha256 = "210d33ada7022569950801f101dddc013dd69274f2245aec6cab9f4704471c15"
 _purs_macos_url = "https://github.com/purescript/purescript/releases/download/v0.13.8/macos.tar.gz"
 
-_purs_compile_module_linux_sha256 = "9c919a72c0305ff5a733eaaeac45e33af64a3300e684aba8a2a9751dc3c14184"
-_purs_compile_module_linux_url = "https://github.com/joneshf/purs-tools/releases/download/nightly-2021-02-16-02-55-07/purs-compile-module-nightly-2021-02-16-02-55-07-linux.tar.gz"
+_purs_compile_module_linux_sha256 = "353ee208fdbe34cb6136dc03c647e27f57a8181871bc5f6cbdca3be68bfc1bee"
+_purs_compile_module_linux_url = "https://github.com/joneshf/purs-tools/releases/download/nightly-2021-03-15-10-01-44/purs-compile-module-nightly-2021-03-15-10-01-44-linux.tar.gz"
 
-_purs_compile_module_macos_sha256 = "e04eb2233b56c7f778158d18b8d2be2365276ff8be6fbc14a238793af9d09a44"
-_purs_compile_module_macos_url = "https://github.com/joneshf/purs-tools/releases/download/nightly-2021-02-16-02-55-07/purs-compile-module-nightly-2021-02-16-02-55-07-macOS.tar.gz"
+_purs_compile_module_macos_sha256 = "6d118b384e47fac00e3d77e41ced048a0f3e2467244e703e11fe2b46ab8bd03c"
+_purs_compile_module_macos_url = "https://github.com/joneshf/purs-tools/releases/download/nightly-2021-03-15-10-01-44/purs-compile-module-nightly-2021-03-15-10-01-44-macos.tar.gz"
 
-_purs_module_information_linux_sha256 = "7f2d36595908d8b976c7db9f1a872d5bec627e3a929421039e3cd5e576435094"
-_purs_module_information_linux_url = "https://github.com/joneshf/purs-tools/releases/download/nightly-2021-02-16-02-55-07/purs-module-information-nightly-2021-02-16-02-55-07-linux.tar.gz"
+_purs_module_information_linux_sha256 = "7bc6c2bfed8108e554d4edd652b98d5430aa5ac6da1ffe0b8f5d90cf88815a79"
+_purs_module_information_linux_url = "https://github.com/joneshf/purs-tools/releases/download/nightly-2021-03-15-10-01-44/purs-module-information-nightly-2021-03-15-10-01-44-linux.tar.gz"
 
-_purs_module_information_macos_sha256 = "5c4f64a958b92e37ce7b7d78b26252c45f5e3737ffd95e0b04a410f8e924ee33"
-_purs_module_information_macos_url = "https://github.com/joneshf/purs-tools/releases/download/nightly-2021-02-16-02-55-07/purs-module-information-nightly-2021-02-16-02-55-07-macOS.tar.gz"
+_purs_module_information_macos_sha256 = "4abe8c04c4410c1f5251a8706ba57cbc714d320911e75033546dbf5b562403b5"
+_purs_module_information_macos_url = "https://github.com/joneshf/purs-tools/releases/download/nightly-2021-03-15-10-01-44/purs-module-information-nightly-2021-03-15-10-01-44-macos.tar.gz"
 
 def _purescript_download(ctx):
     """
