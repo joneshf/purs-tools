@@ -63,4 +63,5 @@ purescript_package(
     srcs = [
         ":purs_files",
     ],
+    ignore_warnings = True,
 )

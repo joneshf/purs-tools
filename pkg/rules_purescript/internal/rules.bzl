@@ -301,6 +301,7 @@ def _purescript_package(ctx):
         ctx,
         deps = ctx.attr.deps,
         ffis = ctx.files.ffis,
+        ignore_warnings = ctx.attr.ignore_warnings,
         output_directory = output_directory,
         rts_options = ctx.attr.rts_options,
         srcs = ctx.files.srcs,
@@ -335,6 +336,10 @@ purescript_package = rule(
                 ".js",
             ],
             doc = "Optional FFI files to compile for this \"package\"",
+        ),
+        "ignore_warnings": attr.bool(
+            default = False,
+            doc = "Opt-out of warnings causing a failure",
         ),
         "rts_options": attr.string_list(
             default = [
