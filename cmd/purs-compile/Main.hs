@@ -21,7 +21,6 @@ import qualified "purescript" Language.PureScript.Make
 import qualified "purescript" Language.PureScript.Make.Actions
 import qualified "purescript" Language.PureScript.Make.Cache
 import qualified "purescript" Language.PureScript.Make.Monad
-import qualified "purescript" Language.PureScript.ModuleDependencies
 import qualified "purescript" Language.PureScript.Names
 import qualified "purescript" Language.PureScript.Options
 import qualified "optparse-applicative" Options.Applicative
@@ -94,34 +93,26 @@ compile compileOptions = do
     Language.PureScript.Make.Monad.runMake (options compileOptions) do
       cacheDb <- Language.PureScript.Make.Actions.readCacheDb' (outputDirectory compileOptions)
       preCompiled <- includeAllPreCompiledArtifacts (outputDirectory compileOptions) cacheDb (includeDirectories compileOptions)
-      Language.PureScript.Make.Actions.writeCacheDb' (outputDirectory compileOptions) (snd preCompiled)
-      let preCompiledModuleNames = RIO.Map.keysSet (fst preCompiled)
-      preCompiledExternsFiles <- sortExternsFiles (RIO.Map.elems (fst preCompiled))
+      let preCompiledFilePathAndModuleMap = fmap preCompiledFilePathPair (fst preCompiled)
       unCompiledModules <- Language.PureScript.CST.parseModulesFromFiles id moduleFiles
-      let filePathMap = RIO.Map.fromList (fmap filePathPair unCompiledModules)
+      let unCompiledFilePathAndModuleMap = RIO.Map.fromList (fmap unCompiledFilePathPair unCompiledModules)
+      let filePathAndModuleMap = RIO.Map.union unCompiledFilePathAndModuleMap preCompiledFilePathAndModuleMap
+      let filePathMap = fmap fst filePathAndModuleMap
+      let moduleMap = fmap snd filePathAndModuleMap
       foreigns <- Language.PureScript.Make.inferForeignModules filePathMap
       let makeActions = Language.PureScript.Make.Actions.buildMakeActions (outputDirectory compileOptions) filePathMap foreigns (usePrefix compileOptions)
-      sortedModules <- Language.PureScript.ModuleDependencies.sortModules (partialResultModuleSignature preCompiledModuleNames) unCompiledModules
-      compileModules makeActions preCompiledExternsFiles (fst sortedModules)
+      _ <- Language.PureScript.Make.make makeActions (RIO.Map.elems moduleMap)
+      -- N.B. `Language.PureScript.Make.make` will remove anything from the cache marked as `Language.PureScript.Make.Actions.RebuildNever`.
+      -- Since we want the pre-compiled artifacts to be available for future compilations,
+      -- we write that data to tthe cache after `Language.PureScript.Make.make` has removed them (if they were there).
+      --
+      -- It seems like a bug that it removes something that was marked `Language.PureScript.Make.Actions.RebuildNever`.
+      -- It doesn't seem like it should remove anything.
+      -- But, it might also be intentional for some reason.
+      newCacheDb <- Language.PureScript.Make.Actions.readCacheDb makeActions
+      Language.PureScript.Make.Actions.writeCacheDb makeActions (RIO.Map.union newCacheDb (snd preCompiled))
   printWarningsAndErrors (Language.PureScript.Options.optionsVerboseErrors (options compileOptions)) (jsonErrors compileOptions) makeWarnings makeErrors
   exitSuccess
-
-compileModules ::
-  Language.PureScript.Make.Actions.MakeActions Language.PureScript.Make.Monad.Make ->
-  [Language.PureScript.Externs.ExternsFile] ->
-  [(FilePath, Language.PureScript.CST.Parser.PartialResult Language.PureScript.AST.Declarations.Module)] ->
-  Language.PureScript.Make.Monad.Make [Language.PureScript.Externs.ExternsFile]
-compileModules makeActions externsFiles notCompiledModules' = case notCompiledModules' of
-  [] -> pure externsFiles
-  notCompiledModule : notCompiledModules -> do
-    module' <- Language.PureScript.CST.unwrapParserError (fst notCompiledModule) (Language.PureScript.CST.Parser.resFull (snd notCompiledModule))
-    let Language.PureScript.AST.Declarations.Module _ _ moduleName _ _ = module'
-    cacheInfo <- getCacheInfo makeActions moduleName
-    externsFile <- Language.PureScript.Make.rebuildModule makeActions externsFiles module'
-    oldCacheDb <- Language.PureScript.Make.Actions.readCacheDb makeActions
-    let newCacheDb = RIO.Map.insert moduleName cacheInfo oldCacheDb
-    Language.PureScript.Make.Actions.writeCacheDb makeActions newCacheDb
-    compileModules makeActions (externsFiles <> [externsFile]) notCompiledModules
 
 compileOptionsDescription :: Options.Applicative.InfoMod CompileOptions
 compileOptionsDescription =
@@ -210,34 +201,6 @@ copyIndexJSMap includeDirectory outputDirectory' moduleName =
       (resolveIndexJSMap includeDirectory moduleName)
       (resolveIndexJSMap outputDirectory' moduleName)
 
--- |
--- We have to convert to what the module signature needs for its imports so it we can sort the externs properly.
---
--- Much like with @externsModuleSignature@,
--- it seems like this is something that should happen uniformly so every command doesn't have to do it itself.
-externsImportModuleSignatureImport ::
-  Language.PureScript.Externs.ExternsImport ->
-  (Language.PureScript.Names.ModuleName, Language.PureScript.AST.SourcePos.SourceSpan)
-externsImportModuleSignatureImport externsImport =
-  ( Language.PureScript.Externs.eiModule externsImport,
-    Language.PureScript.AST.SourcePos.nullSourceSpan
-  )
-
--- |
--- We have to convert to a @Language.PureScript.ModuleDependencies.ModuleSignature@ so we can sort the externs properly.
---
--- Each of the upstream commands has to do this same conversion for sorting the externs.
--- Seems a bit error prone to force each command to do the same exact sorting.
-externsModuleSignature ::
-  Language.PureScript.Externs.ExternsFile ->
-  Language.PureScript.ModuleDependencies.ModuleSignature
-externsModuleSignature externsFile =
-  Language.PureScript.ModuleDependencies.ModuleSignature
-    { Language.PureScript.ModuleDependencies.sigSourceSpan = Language.PureScript.Externs.efSourceSpan externsFile,
-      Language.PureScript.ModuleDependencies.sigModuleName = Language.PureScript.Externs.efModuleName externsFile,
-      Language.PureScript.ModuleDependencies.sigImports = fmap externsImportModuleSignatureImport (Language.PureScript.Externs.efImports externsFile)
-    }
-
 failNoPursFiles :: RIO SimpleApp ()
 failNoPursFiles = do
   hPutBuilder
@@ -250,30 +213,6 @@ failNoPursFiles = do
         )
     )
   exitFailure
-
-filePathPair ::
-  forall a.
-  (FilePath, Language.PureScript.CST.Parser.PartialResult Language.PureScript.AST.Declarations.Module) ->
-  (Language.PureScript.Names.ModuleName, Either a FilePath)
-filePathPair (filePath, module') =
-  ( Language.PureScript.AST.Declarations.getModuleName (Language.PureScript.CST.Parser.resPartial module'),
-    Right filePath
-  )
-
-getCacheInfo ::
-  Language.PureScript.Make.Actions.MakeActions Language.PureScript.Make.Monad.Make ->
-  Language.PureScript.Names.ModuleName ->
-  Language.PureScript.Make.Monad.Make Language.PureScript.Make.Cache.CacheInfo
-getCacheInfo makeActions moduleName = do
-  inputTimestampsAndHashes <- Language.PureScript.Make.Actions.getInputTimestampsAndHashes makeActions moduleName
-  case inputTimestampsAndHashes of
-    Left _ -> do
-      pure (Language.PureScript.Make.Cache.CacheInfo RIO.Map.empty)
-    Right cacheInfoMap' -> do
-      cacheInfoMap <- for cacheInfoMap' \info -> do
-        contentHash <- snd info
-        pure (fst info, contentHash)
-      pure (Language.PureScript.Make.Cache.CacheInfo cacheInfoMap)
 
 globWarningOnMisses ::
   (String -> RIO SimpleApp ()) ->
@@ -398,43 +337,6 @@ main = do
     runRIO simpleApp do
       compile compileOptions
 
-partialResultModuleSignature ::
-  forall a.
-  RIO.Set.Set Language.PureScript.Names.ModuleName ->
-  (a, Language.PureScript.CST.Parser.PartialResult Language.PureScript.AST.Declarations.Module) ->
-  Language.PureScript.ModuleDependencies.ModuleSignature
-partialResultModuleSignature preCompiledModuleNames partialResultModule = case Language.PureScript.CST.Parser.resPartial (snd partialResultModule) of
-  Language.PureScript.AST.Declarations.Module sourceSpan _ moduleName declarations _ ->
-    Language.PureScript.ModuleDependencies.ModuleSignature
-      sourceSpan
-      moduleName
-      (RIO.Map.toList (foldMap (moduleSignatureImports preCompiledModuleNames) declarations))
-
-moduleSignatureImports ::
-  RIO.Set.Set Language.PureScript.Names.ModuleName ->
-  Language.PureScript.AST.Declarations.Declaration ->
-  RIO.Map.Map
-    Language.PureScript.Names.ModuleName
-    Language.PureScript.AST.SourcePos.SourceSpan
-moduleSignatureImports preCompiledModuleNames declaration = case declaration of
-  Language.PureScript.AST.Declarations.BindingGroupDeclaration {} -> RIO.Map.empty
-  Language.PureScript.AST.Declarations.BoundValueDeclaration {} -> RIO.Map.empty
-  Language.PureScript.AST.Declarations.DataBindingGroupDeclaration {} -> RIO.Map.empty
-  Language.PureScript.AST.Declarations.DataDeclaration {} -> RIO.Map.empty
-  Language.PureScript.AST.Declarations.ExternDataDeclaration {} -> RIO.Map.empty
-  Language.PureScript.AST.Declarations.ExternDeclaration {} -> RIO.Map.empty
-  Language.PureScript.AST.Declarations.ExternKindDeclaration {} -> RIO.Map.empty
-  Language.PureScript.AST.Declarations.FixityDeclaration {} -> RIO.Map.empty
-  Language.PureScript.AST.Declarations.ImportDeclaration sourceAnn moduleName _ _ ->
-    if RIO.Set.member moduleName preCompiledModuleNames
-      then RIO.Map.empty
-      else RIO.Map.singleton moduleName (fst sourceAnn)
-  Language.PureScript.AST.Declarations.TypeClassDeclaration {} -> RIO.Map.empty
-  Language.PureScript.AST.Declarations.TypeDeclaration {} -> RIO.Map.empty
-  Language.PureScript.AST.Declarations.TypeInstanceDeclaration {} -> RIO.Map.empty
-  Language.PureScript.AST.Declarations.TypeSynonymDeclaration {} -> RIO.Map.empty
-  Language.PureScript.AST.Declarations.ValueDeclaration {} -> RIO.Map.empty
-
 noPrefixParser :: Options.Applicative.Parser Bool
 noPrefixParser =
   Options.Applicative.switch
@@ -459,6 +361,45 @@ outputDirectoryParser =
         <> Options.Applicative.showDefault
         <> Options.Applicative.help "The output directory"
     )
+
+preCompiledFilePathPair ::
+  forall a.
+  Language.PureScript.Externs.ExternsFile ->
+  ( Either Language.PureScript.Make.Actions.RebuildPolicy a,
+    Language.PureScript.CST.Parser.PartialResult Language.PureScript.AST.Declarations.Module
+  )
+preCompiledFilePathPair externsFile =
+  ( Left Language.PureScript.Make.Actions.RebuildNever,
+    preCompiledModule externsFile
+  )
+
+preCompiledImport ::
+  Language.PureScript.Externs.ExternsImport ->
+  Language.PureScript.AST.Declarations.Declaration
+preCompiledImport externsImport =
+  Language.PureScript.AST.Declarations.ImportDeclaration
+    Language.PureScript.AST.SourcePos.nullSourceAnn
+    (Language.PureScript.Externs.eiModule externsImport)
+    (Language.PureScript.Externs.eiImportType externsImport)
+    (Language.PureScript.Externs.eiImportedAs externsImport)
+
+preCompiledModule ::
+  Language.PureScript.Externs.ExternsFile ->
+  Language.PureScript.CST.Parser.PartialResult Language.PureScript.AST.Declarations.Module
+preCompiledModule externsFile =
+  Language.PureScript.CST.Parser.PartialResult
+    { Language.PureScript.CST.Parser.resFull = Right module',
+      Language.PureScript.CST.Parser.resPartial = module'
+    }
+  where
+    module' :: Language.PureScript.AST.Declarations.Module
+    module' =
+      Language.PureScript.AST.Declarations.Module
+        (Language.PureScript.Externs.efSourceSpan externsFile)
+        []
+        (Language.PureScript.Externs.efModuleName externsFile)
+        (fmap preCompiledImport (Language.PureScript.Externs.efImports externsFile))
+        (Just (Language.PureScript.Externs.efExports externsFile))
 
 -- | Arguments: verbose, use JSON, warnings, errors
 printWarningsAndErrors ::
@@ -562,12 +503,20 @@ resolveIndexJSMap ::
 resolveIndexJSMap directory moduleName =
   resolveFilePath directory moduleName "index.js.map"
 
-sortExternsFiles ::
-  [Language.PureScript.Externs.ExternsFile] ->
-  Language.PureScript.Make.Monad.Make [Language.PureScript.Externs.ExternsFile]
-sortExternsFiles externsFiles = do
-  externsFilesAndGraph <- Language.PureScript.ModuleDependencies.sortModules externsModuleSignature externsFiles
-  pure (fst externsFilesAndGraph)
+unCompiledFilePathPair ::
+  forall a.
+  (FilePath, Language.PureScript.CST.Parser.PartialResult Language.PureScript.AST.Declarations.Module) ->
+  ( Language.PureScript.Names.ModuleName,
+    ( Either a FilePath,
+      Language.PureScript.CST.Parser.PartialResult Language.PureScript.AST.Declarations.Module
+    )
+  )
+unCompiledFilePathPair (filePath, module') =
+  ( Language.PureScript.AST.Declarations.getModuleName (Language.PureScript.CST.Parser.resPartial module'),
+    ( Right filePath,
+      module'
+    )
+  )
 
 verboseErrorsParser :: Options.Applicative.Parser Bool
 verboseErrorsParser =
