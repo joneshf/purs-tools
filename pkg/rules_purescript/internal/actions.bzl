@@ -5,6 +5,7 @@ Common functions for creating actions to build PureScript programs.
 load(
     "//internal:providers.bzl",
     "PureScriptModuleInfo",
+    "PureScriptPackageInfo",
 )
 
 def purs_bundle(
@@ -129,7 +130,65 @@ def purs_compile(
             E.g. `[ "-A1G", "-N4" ]`
     """
 
-    pass
+    purs = ctx.toolchains["@joneshf_rules_purescript//purescript:toolchain_type"]
+
+    inputs = depset()
+    outputs = []
+
+    arguments = ctx.actions.args()
+
+    arguments.add("--output", output_directory.path)
+    outputs.append(output_directory)
+
+    if deps != None:
+        dependencies = depset(
+            direct = [dep[PureScriptPackageInfo].info.output_directory for dep in deps],
+            transitive = [dep[PureScriptPackageInfo].deps for dep in deps],
+        )
+        arguments.add_all(
+            dependencies,
+            before_each = "--include",
+            expand_directories = False,
+        )
+        inputs = depset(
+            transitive = [
+                dependencies,
+                inputs,
+            ],
+        )
+
+    if ffis != None:
+        inputs = depset(
+            direct = ffis,
+            transitive = [
+                inputs,
+            ],
+        )
+
+    if rts_options != None:
+        arguments.add("+RTS")
+        arguments.add_all(rts_options)
+        arguments.add("-RTS")
+
+    arguments.add_all(srcs)
+    inputs = depset(
+        direct = srcs,
+        transitive = [inputs],
+    )
+
+    ctx.actions.run(
+        arguments = [
+            arguments,
+        ],
+        executable = purs.internal.purs_compile,
+        inputs = inputs,
+        mnemonic = "PursCompile",
+        outputs = outputs,
+        progress_message = "PursCompile {name}".format(
+            name = ctx.label.name,
+        ),
+        use_default_shell_env = True,
+    )
 
 def purs_compile_module(
         ctx,

@@ -10,6 +10,7 @@ load(
 load(
     "//internal:actions.bzl",
     "purs_bundle",
+    "purs_compile",
     "purs_compile_module",
 )
 load(
@@ -114,6 +115,103 @@ _purs_bundle_works_with_purescript_and_ffi_fake_rule = rule(
 
 _purs_bundle_works_with_purescript_and_ffi_test = analysistest.make(
     _purs_bundle_works_with_purescript_and_ffi_implementation_test,
+    expect_failure = True,
+)
+
+def _purs_compile_works_with_only_purescript_implementation_test(ctx):
+    """
+    Test to verify that only PureScript files generate the correct actions.
+    """
+    env = analysistest.begin(ctx)
+
+    actions = analysistest.target_actions(env)
+    purs_compile_action = find_action(env, actions, "PursCompile")
+
+    inputs = [input.basename for input in purs_compile_action.inputs.to_list()]
+    asserts.equals(env, 2, len(inputs))
+    contains(env, inputs, "purs-compile", "Expected purs-compile to be an input")
+    contains(env, inputs, "PureScriptOnly.purs", "Expected PureScriptOnly.purs to be an input")
+
+    outputs = [output.basename for output in purs_compile_action.outputs.to_list()]
+    asserts.equals(env, 1, len(outputs))
+    contains(env, outputs, "output-purescript-only", "Expected output-purescript-only to be an output")
+
+    argv = purs_compile_action.argv
+    contains(env, argv, "--output", "Expected --output to be an argument")
+
+    return analysistest.end(env)
+
+def _purs_compile_works_with_only_purescript_fake_implementation_rule(ctx):
+    output_directory = ctx.actions.declare_directory("output-purescript-only")
+    src = ctx.actions.declare_file("PureScriptOnly.purs")
+    purs_compile(
+        ctx,
+        output_directory = output_directory,
+        srcs = [
+            src,
+        ],
+    )
+
+_purs_compile_works_with_only_purescript_fake_rule = rule(
+    implementation = _purs_compile_works_with_only_purescript_fake_implementation_rule,
+    toolchains = [
+        "@joneshf_rules_purescript//purescript:toolchain_type",
+    ],
+)
+
+_purs_compile_works_with_only_purescript_test = analysistest.make(
+    _purs_compile_works_with_only_purescript_implementation_test,
+    expect_failure = True,
+)
+
+def _purs_compile_works_with_purescript_and_ffi_implementation_test(ctx):
+    """
+    Test to verify that only PureScript files generate the correct actions.
+    """
+    env = analysistest.begin(ctx)
+
+    actions = analysistest.target_actions(env)
+    purs_compile_action = find_action(env, actions, "PursCompile")
+
+    inputs = [input.basename for input in purs_compile_action.inputs.to_list()]
+    asserts.equals(env, 3, len(inputs))
+    contains(env, inputs, "purs-compile", "Expected purs-compile to be an input")
+    contains(env, inputs, "PureScriptAndFFI.js", "Expected PureScriptAndFFI.js to be an input")
+    contains(env, inputs, "PureScriptAndFFI.purs", "Expected PureScriptAndFFI.purs to be an input")
+
+    outputs = [output.basename for output in purs_compile_action.outputs.to_list()]
+    asserts.equals(env, 1, len(outputs))
+    contains(env, outputs, "output-purescript-and-ffi", "Expected output-purescript-and-ffi to be an output")
+
+    argv = purs_compile_action.argv
+    contains(env, argv, "--output", "Expected --output to be an argument")
+
+    return analysistest.end(env)
+
+def _purs_compile_works_with_purescript_and_ffi_fake_implementation_rule(ctx):
+    ffi = ctx.actions.declare_file("PureScriptAndFFI.js")
+    output_directory = ctx.actions.declare_directory("output-purescript-and-ffi")
+    src = ctx.actions.declare_file("PureScriptAndFFI.purs")
+    purs_compile(
+        ctx,
+        ffis = [
+            ffi,
+        ],
+        output_directory = output_directory,
+        srcs = [
+            src,
+        ],
+    )
+
+_purs_compile_works_with_purescript_and_ffi_fake_rule = rule(
+    implementation = _purs_compile_works_with_purescript_and_ffi_fake_implementation_rule,
+    toolchains = [
+        "@joneshf_rules_purescript//purescript:toolchain_type",
+    ],
+)
+
+_purs_compile_works_with_purescript_and_ffi_test = analysistest.make(
+    _purs_compile_works_with_purescript_and_ffi_implementation_test,
     expect_failure = True,
 )
 
@@ -300,6 +398,36 @@ def purs_bundle_tests_suite(name):
     )
     _purs_bundle_works_with_purescript_and_ffi_fake_rule(
         name = "purs_bundle_works_with_purescript_and_ffi_fake_target",
+        tags = [
+            "manual",
+        ],
+    )
+
+def purs_compile_tests_suite(name):
+    """
+    A suite of tests around purs_compile.
+
+    Args:
+        name: A unique name for this target.
+    """
+
+    _purs_compile_works_with_only_purescript_test(
+        name = "purs_compile_works_with_only_purescript_test",
+        target_under_test = ":purs_compile_works_with_only_purescript_fake_target",
+    )
+    _purs_compile_works_with_only_purescript_fake_rule(
+        name = "purs_compile_works_with_only_purescript_fake_target",
+        tags = [
+            "manual",
+        ],
+    )
+
+    _purs_compile_works_with_purescript_and_ffi_test(
+        name = "purs_compile_works_with_purescript_and_ffi_test",
+        target_under_test = ":purs_compile_works_with_purescript_and_ffi_fake_target",
+    )
+    _purs_compile_works_with_purescript_and_ffi_fake_rule(
+        name = "purs_compile_works_with_purescript_and_ffi_fake_target",
         tags = [
             "manual",
         ],

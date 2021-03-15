@@ -19,6 +19,19 @@ Has the following fields:
     },
 )
 
+PureScriptPackageInfo = provider(
+    doc = "Contains information about a PureScript \"package\"",
+    fields = {
+        "deps": "A depset of other PureScript \"package\"s for this \"package\"'s dependencies.",
+        "info": """
+A struct containing information about this \"package\".
+
+Has the following fields:
+    output_directory: "The compiled artifact directory.",
+""",
+    },
+)
+
 # PureScriptToolchainInfo is a dummy provider that serves as documentation for the public interface of the ToolchainInfo provide returned by purescript_toolchain.
 # Toolchains compatible with @joneshf_rules_purescript//:toolchain_type must satisfy this interface.
 # No PureScriptToolchainInfo object is actually created.
