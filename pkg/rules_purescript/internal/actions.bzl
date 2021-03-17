@@ -21,9 +21,11 @@ def _set_rts_options(
     """
 
     if rts_options != None:
-        arguments.add("+RTS")
-        arguments.add_all(rts_options)
-        arguments.add("-RTS")
+        arguments.add_all(
+            "+RTS",
+            rts_options,
+            terminate_with = "-RTS",
+        )
 
 def purs_bundle(
         ctx,
