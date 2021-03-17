@@ -8,6 +8,23 @@ load(
     "PureScriptPackageInfo",
 )
 
+def _set_rts_options(
+        arguments,
+        rts_options = None):
+    """
+    Sets the RTS options if given any.
+
+    Args:
+        arguments: An `Args` to set the RTS options on.
+        rts_options: Options to pass to GHC's RTS.
+            E.g. `[ "-A1G", "-N4" ]`
+    """
+
+    if rts_options != None:
+        arguments.add("+RTS")
+        arguments.add_all(rts_options)
+        arguments.add("-RTS")
+
 def purs_bundle(
         ctx,
         main_module,
@@ -89,10 +106,7 @@ def purs_bundle(
         arguments.add(foreign_js.path)
         inputs.append(foreign_js)
 
-    if rts_options != None:
-        arguments.add("+RTS")
-        arguments.add_all(rts_options)
-        arguments.add("-RTS")
+    _set_rts_options(arguments, rts_options)
 
     outputs.append(out)
 
@@ -170,10 +184,7 @@ def purs_compile(
     if ignore_warnings:
         arguments.add("--ignore-warnings")
 
-    if rts_options != None:
-        arguments.add("+RTS")
-        arguments.add_all(rts_options)
-        arguments.add("-RTS")
+    _set_rts_options(arguments, rts_options)
 
     arguments.add_all(srcs)
     inputs = depset(
@@ -279,10 +290,7 @@ def purs_compile_module(
         arguments.add("--output-standard-externs-file", standard_externs.path)
         outputs.append(standard_externs)
 
-    if rts_options != None:
-        arguments.add("+RTS")
-        arguments.add_all(rts_options)
-        arguments.add("-RTS")
+    _set_rts_options(arguments, rts_options)
 
     ctx.actions.run(
         arguments = [
