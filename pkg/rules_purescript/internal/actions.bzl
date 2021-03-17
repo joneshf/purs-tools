@@ -65,7 +65,7 @@ def purs_bundle(
     arguments.add("bundle")
     arguments.add("--main", main_module)
     arguments.add("--module", main_module)
-    arguments.add("--output", out.path)
+    arguments.add("--output", out)
 
     # Collect the transitive dependencies in one directory for bundling.
     if deps != None:
@@ -84,7 +84,7 @@ def purs_bundle(
                 output = dependency_index_js,
                 target_file = dependency.javascript_file,
             )
-            arguments.add(dependency_index_js.path)
+            arguments.add(dependency_index_js)
             inputs.append(dependency_index_js)
 
             if dependency.ffi_file != None:
@@ -98,14 +98,14 @@ def purs_bundle(
                     output = dependency_foreign_js,
                     target_file = dependency.ffi_file,
                 )
-                arguments.add(dependency_foreign_js.path)
+                arguments.add(dependency_foreign_js)
                 inputs.append(dependency_foreign_js)
 
-    arguments.add(index_js.path)
+    arguments.add(index_js)
     inputs.append(index_js)
 
     if foreign_js != None:
-        arguments.add(foreign_js.path)
+        arguments.add(foreign_js)
         inputs.append(foreign_js)
 
     _set_rts_options(arguments, rts_options)
@@ -254,10 +254,10 @@ def purs_compile_module(
 
     arguments = ctx.actions.args()
 
-    arguments.add("--output-javascript-file", index_js.path)
+    arguments.add("--output-javascript-file", index_js)
     outputs.append(index_js)
 
-    arguments.add("--purs-file", src.path)
+    arguments.add("--purs-file", src)
     inputs.append(src)
 
     if deps != None:
@@ -271,25 +271,25 @@ def purs_compile_module(
             transitive = [dep[PureScriptModuleInfo].deps for dep in deps],
         )
         for dependency in dependencies.to_list():
-            arguments.add("--input-externs-file", dependency.signature_externs.path)
+            arguments.add("--input-externs-file", dependency.signature_externs)
             inputs.append(dependency.signature_externs)
 
     if ffi != None and foreign_js != None:
-        arguments.add("--input-ffi-file", ffi.path)
+        arguments.add("--input-ffi-file", ffi)
         inputs.append(ffi)
 
-        arguments.add("--output-ffi-file", foreign_js.path)
+        arguments.add("--output-ffi-file", foreign_js)
         outputs.append(foreign_js)
 
     if ignore_warnings:
         arguments.add("--ignore-warnings")
 
     if signature_externs != None:
-        arguments.add("--output-signature-externs-file", signature_externs.path)
+        arguments.add("--output-signature-externs-file", signature_externs)
         outputs.append(signature_externs)
 
     if standard_externs != None:
-        arguments.add("--output-standard-externs-file", standard_externs.path)
+        arguments.add("--output-standard-externs-file", standard_externs)
         outputs.append(standard_externs)
 
     _set_rts_options(arguments, rts_options)
