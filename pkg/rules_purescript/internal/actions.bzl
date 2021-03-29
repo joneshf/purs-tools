@@ -132,8 +132,8 @@ def purs_compile(
         srcs,
         deps = None,
         ffis = None,
-        ignore_warnings = False,
-        rts_options = None):
+        rts_options = None,
+        strict = False):
     """
     Compiles a batch of PureScript modules from source.
 
@@ -143,9 +143,9 @@ def purs_compile(
         srcs: The PureScript source files to be compiled.
         deps: The direct dependencies for this PureScript module.
         ffis: The optional PureScript FFI files.
-        ignore_warnings: Opt-out of warnings causing a failure.
         rts_options: Options to pass to GHC's RTS.
             E.g. `[ "-A1G", "-N4" ]`
+        strict: Promote warnings to errors.
     """
 
     purs = ctx.toolchains["@joneshf_rules_purescript//purescript:toolchain_type"]
@@ -183,8 +183,8 @@ def purs_compile(
             ],
         )
 
-    if ignore_warnings:
-        arguments.add("--ignore-warnings")
+    if strict:
+        arguments.add("--strict")
 
     _set_rts_options(arguments, rts_options)
 

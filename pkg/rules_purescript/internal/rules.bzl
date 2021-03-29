@@ -301,10 +301,10 @@ def _purescript_package(ctx):
         ctx,
         deps = ctx.attr.deps,
         ffis = ctx.files.ffis,
-        ignore_warnings = ctx.attr.ignore_warnings,
         output_directory = output_directory,
         rts_options = ctx.attr.rts_options,
         srcs = ctx.files.srcs,
+        strict = ctx.attr.strict,
     )
 
     return [
@@ -337,10 +337,6 @@ purescript_package = rule(
             ],
             doc = "Optional FFI files to compile for this \"package\"",
         ),
-        "ignore_warnings": attr.bool(
-            default = False,
-            doc = "Opt-out of warnings causing a failure",
-        ),
         "rts_options": attr.string_list(
             default = [
                 "-N1",
@@ -364,6 +360,10 @@ For more information, see: https://downloads.haskell.org/ghc/8.6.5/docs/html/use
             ],
             doc = "Source files to compile for this \"package\"",
             mandatory = True,
+        ),
+        "strict": attr.bool(
+            default = False,
+            doc = "Promote warnings to errors",
         ),
     },
     doc = """

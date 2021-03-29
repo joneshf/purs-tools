@@ -65,9 +65,9 @@ Args:
     srcs: The PureScript source files to be compiled.
     deps: The direct dependencies for this PureScript module.
     ffis: The optional PureScript FFI files.
-    ignore_warnings: Opt-out of warnings causing a failure.
     rts_options: Options to pass to GHC's RTS.
         E.g. `[ "-A1G", "-N4" ]`
+    strict: Promote warnings to errors.
         """,
         "compile_module": """
 Compiles a single PureScript module from source.
