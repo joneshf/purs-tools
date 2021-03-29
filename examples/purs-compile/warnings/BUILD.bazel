@@ -45,7 +45,6 @@ genrule(
     cmd = " ".join(
         [
             "$(execpath //cmd/purs-compile)",
-            "--ignore-warnings",
             "--output $@",
             "$(SRCS)",
         ],
