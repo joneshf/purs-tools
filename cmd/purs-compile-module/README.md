@@ -15,9 +15,9 @@ This is much more in the realm of something another tool builds on top of.
 
 ## Installation
 
-### Bintray
+### GitHub
 
-Currently, pre-compiled binaries for Linux and macOS are available on [bintray][]:
+Currently, pre-compiled binaries for Linux and macOS are available on [GitHub Releases][]:
 
 ### Other
 
@@ -175,7 +175,7 @@ If there are material changes to a module,
 the affected modules will still have to recompile.
 
 [bazel]: https://bazel.build/
-[bintray]: https://bintray.com/joneshf/generic/purs-compile-module/_latestVersion
+[github releases]: https://github.com/joneshf/purs-tools/releases
 [purescript]: https://www.purescript.org/
 [purescript package]: https://hackage.haskell.org/package/purescript
 [shake]: https://shakebuild.com/

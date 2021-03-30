@@ -14,7 +14,7 @@ Hopefully, the merit of this idea can be realized and upstreamed into `purs comp
 
 ## Installation
 
-### Bintray
+### GitHub Releases
 
 Currently, pre-compiled binaries for Linux and macOS are available on [GitHub Releases][]:
 
