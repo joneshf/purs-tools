@@ -1,0 +1,17 @@
+load(
+    "@rules_pkg//:pkg.bzl",
+    "pkg_tar",
+)
+
+pkg_tar(
+    name = "purs-tools.tar.gz",
+    srcs = [
+        "//cmd/purs-compile:purs-compile.tar.gz",
+        "//cmd/purs-compile-module:purs-compile-module.tar.gz",
+        "//cmd/purs-externs:purs-externs.tar.gz",
+        "//cmd/purs-module-information:purs-module-information.tar.gz",
+    ],
+    extension = "tar.gz",
+    mode = "0755",
+    package_file_name = "purs-tools.tar.gz",
+)

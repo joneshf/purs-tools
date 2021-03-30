@@ -63,4 +63,7 @@ pkg_tar(
     extension = "tar.gz",
     mode = "0755",
     package_file_name = "purs-module-information.tar.gz",
+    visibility = [
+        "//cmd/purs-tools:__pkg__",
+    ],
 )
