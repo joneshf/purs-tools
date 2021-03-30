@@ -54,91 +54,40 @@ jobs:
     if: ${{ needs.last-commit.outputs.sha != '' }}
 
     steps:
-      - id: purs-compile-linux
-        name: Download Linux purs-compile
+      - id: purs-tools-linux
+        name: Download Linux purs-tools
         uses: dawidd6/action-download-artifact@891cccee4b25d3306cf5edafa174ddc1d969871f
         with:
           commit: ${{ needs.last-commit.outputs.sha }}
-          name: purs-compile-${{ needs.last-commit.outputs.sha }}-linux.tar.gz
-          path: purs-compile-linux
+          name: purs-tools-${{ needs.last-commit.outputs.sha }}-linux.tar.gz
+          path: purs-tools-linux
           workflow: main.yaml
 
-      - id: purs-compile-macOS
-        name: Download macOS purs-compile
+      - id: purs-tools-macOS
+        name: Download macOS purs-tools
         uses: dawidd6/action-download-artifact@891cccee4b25d3306cf5edafa174ddc1d969871f
         with:
           commit: ${{ needs.last-commit.outputs.sha }}
-          name: purs-compile-${{ needs.last-commit.outputs.sha }}-macos.tar.gz
-          path: purs-compile-macos
-          workflow: main.yaml
-
-      - id: purs-compile-module-linux
-        name: Download Linux purs-compile-module
-        uses: dawidd6/action-download-artifact@891cccee4b25d3306cf5edafa174ddc1d969871f
-        with:
-          commit: ${{ needs.last-commit.outputs.sha }}
-          name: purs-compile-module-${{ needs.last-commit.outputs.sha }}-linux.tar.gz
-          path: purs-compile-module-linux
-          workflow: main.yaml
-
-      - id: purs-compile-module-macOS
-        name: Download macOS purs-compile-module
-        uses: dawidd6/action-download-artifact@891cccee4b25d3306cf5edafa174ddc1d969871f
-        with:
-          commit: ${{ needs.last-commit.outputs.sha }}
-          name: purs-compile-module-${{ needs.last-commit.outputs.sha }}-macos.tar.gz
-          path: purs-compile-module-macos
-          workflow: main.yaml
-
-      - id: purs-externs-linux
-        name: Download Linux purs-externs
-        uses: dawidd6/action-download-artifact@891cccee4b25d3306cf5edafa174ddc1d969871f
-        with:
-          commit: ${{ needs.last-commit.outputs.sha }}
-          name: purs-externs-${{ needs.last-commit.outputs.sha }}-linux.tar.gz
-          path: purs-externs-linux
-          workflow: main.yaml
-
-      - id: purs-externs-macOS
-        name: Download macOS purs-externs
-        uses: dawidd6/action-download-artifact@891cccee4b25d3306cf5edafa174ddc1d969871f
-        with:
-          commit: ${{ needs.last-commit.outputs.sha }}
-          name: purs-externs-${{ needs.last-commit.outputs.sha }}-macos.tar.gz
-          path: purs-externs-macos
-          workflow: main.yaml
-
-      - id: purs-module-information-linux
-        name: Download Linux purs-module-information
-        uses: dawidd6/action-download-artifact@891cccee4b25d3306cf5edafa174ddc1d969871f
-        with:
-          commit: ${{ needs.last-commit.outputs.sha }}
-          name: purs-module-information-${{ needs.last-commit.outputs.sha }}-linux.tar.gz
-          path: purs-module-information-linux
-          workflow: main.yaml
-
-      - id: purs-module-information-macOS
-        name: Download macOS purs-module-information
-        uses: dawidd6/action-download-artifact@891cccee4b25d3306cf5edafa174ddc1d969871f
-        with:
-          commit: ${{ needs.last-commit.outputs.sha }}
-          name: purs-module-information-${{ needs.last-commit.outputs.sha }}-macos.tar.gz
-          path: purs-module-information-macos
+          name: purs-tools-${{ needs.last-commit.outputs.sha }}-macos.tar.gz
+          path: purs-tools-macos
           workflow: main.yaml
 
       - name: Remove SHA from names
         run: |
-          mv purs-compile-linux/purs-compile.tar.gz "purs-compile-${{ needs.last-commit.outputs.tag }}-linux.tar.gz"
-          mv purs-compile-macos/purs-compile.tar.gz "purs-compile-${{ needs.last-commit.outputs.tag }}-macos.tar.gz"
+          tar zxvf purs-tools-linux/purs-tools.tar.gz -C purs-tools-linux
+          rm -f purs-tools-linux/purs-tools.tar.gz
 
-          mv purs-compile-module-linux/purs-compile-module.tar.gz "purs-compile-module-${{ needs.last-commit.outputs.tag }}-linux.tar.gz"
-          mv purs-compile-module-macos/purs-compile-module.tar.gz "purs-compile-module-${{ needs.last-commit.outputs.tag }}-macos.tar.gz"
+          for artifact in purs-tools-linux/*.tar.gz; do
+            mv "${artifact}" "$(basename -s .tar.gz ${artifact})-${{ needs.last-commit.outputs.tag }}-linux.tar.gz"
+          done
 
-          mv purs-externs-linux/purs-externs.tar.gz "purs-externs-${{ needs.last-commit.outputs.tag }}-linux.tar.gz"
-          mv purs-externs-macos/purs-externs.tar.gz "purs-externs-${{ needs.last-commit.outputs.tag }}-macos.tar.gz"
+          tar zxvf purs-tools-macos/purs-tools.tar.gz -C purs-tools-macos
+          rm -f purs-tools-macos/purs-tools.tar.gz
 
-          mv purs-module-information-linux/purs-module-information.tar.gz "purs-module-information-${{ needs.last-commit.outputs.tag }}-linux.tar.gz"
-          mv purs-module-information-macos/purs-module-information.tar.gz "purs-module-information-${{ needs.last-commit.outputs.tag }}-macos.tar.gz"
+          for artifact in purs-tools-macos/*.tar.gz; do
+            mv "${artifact}" "$(basename -s .tar.gz ${artifact})-${{ needs.last-commit.outputs.tag }}-macos.tar.gz"
+          done
+
       - env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         name: Create nightly release
