@@ -146,7 +146,7 @@ Compiling Data.Monoid.Disj
 Compiling Data.Monoid.Dual
 ```
 
-Then we can compile our module with the pre-compiled `purescript-prelude` artifacts
+Then we can compile our module with the pre-compiled `purescript-prelude` artifacts.
 We use this new `--include` flag to specify where to look for pre-compiled artifacts:
 
 ```Console
