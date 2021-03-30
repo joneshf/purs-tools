@@ -29,6 +29,11 @@ This is intentional;
 `purs-compile` is meant to be a drop-in replacement for `purs compile`.
 Anything that currently works with `purs compile` should also work with `purs-compile`.
 
+This binary accepts a `--include` flag.
+If this flag points to a directory of pre-compiled artifacts,
+this binary will attempt to use them.
+This flag can be supplied multiple times to work with pre-compiled artifacts in multiple locations.
+
 ### Compiling without dependencies
 
 If we have a few modules to compile and we don't have any dependencies:
@@ -93,7 +98,8 @@ foo :: Int
 foo = 1 + 2
 ```
 
-We can compile `purescript-prelude` first:
+We can compile `purescript-prelude` first.
+We use the standard `--output` flag to specify where to point the artifacts:
 
 ```Console
 $ purs-compile --output output-prelude '.spago/prelude/v4.1.1/src/**/*.purs'
@@ -140,7 +146,8 @@ Compiling Data.Monoid.Disj
 Compiling Data.Monoid.Dual
 ```
 
-Then we can compile our module with the pre-compiled `purescript-prelude` artifacts:
+Then we can compile our module with the pre-compiled `purescript-prelude` artifacts
+We use this new `--include` flag to specify where to look for pre-compiled artifacts:
 
 ```Console
 $ purs-compile --include output-prelude Foo.purs
